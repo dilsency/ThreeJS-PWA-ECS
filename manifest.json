@@ -1,8 +1,8 @@
 {
-  "short_name": "MinPWA",
-  "name": "ThreeJS Bare Minimum PWA",
-  "description": "PWA test with bare minimum three.js",
-  "version": "0.02",
+  "short_name": "PWA ECS",
+  "name": "ThreeJS PWA ECS",
+  "description": "PWA ECS test | three.js",
+  "version": "0.01",
   "background_color": "#ff4488",
   "theme_color": "#ff4488",
   "display": "standalone",
@@ -19,6 +19,6 @@
       "sizes": "512x512"
     }
   ],
-  "scope": "/ThreeJS-Bare-Minimum-PWA/",
+  "scope": "/ThreeJS-PWA-ECS/",
   "start_url": "./index.html"
 }
