@@ -1,0 +1,144 @@
+// ECS architecture
+// https://keep.google.com/u/0/#NOTE/1VZcHow6i1CL34hbKCEnhdlomP1MtBxrzssvUT4wwMWJLCXrubqAjogXsTz7MCC4
+
+// instances of the entity base class...
+// ...have instances of classes that extend from the entity_component class
+
+// nothing inherits From entity, it seems
+// we only ever create "empty" entities...
+// ...and then attach components to that
+// but the specific components DO inherit from the entity_component base class!
+
+// so even a player is not an entity
+// it is an "empty" entity...
+// ...with a bunch of player-based components attached to it
+
+
+// I guess one Could make a class that inherits from entity that just does all this attachment inside itself
+// Idk
+// let's just follow the tutorial
+
+export class Entity
+{
+    #params = null;
+    #name = null;
+    #parent = null;
+    #components = null;
+    #invokableHandlers = null;
+
+    #onlyOnce = null;
+    constructor(params)
+    {
+        //
+        //super(params);
+        this.#params = params;
+
+        //
+        this.#components = {};
+        this.#invokableHandlers = {};
+
+        //
+        this.#onlyOnce = false;
+    }
+
+    // getters
+
+    methodGetComponent(paramComponentName)
+    {
+        return this.#components[paramComponentName];
+    }
+
+    // setters
+
+    // could we use the set keyword for this?
+    // probably not, since our properties are private
+    // and we usually don't like the look of setting properties that directly, outside of the class
+    methodSetParent(paramParent) { this.#parent = paramParent; }
+    methodSetName(paramName) { this.#name = paramName; }
+
+    // adders
+
+    methodAddComponent(paramComponent)
+    {
+        // first, we update the parent prop of the component, to be this
+        paramComponent.methodSetParent(this);
+
+        // then we add it at the correct index
+        // note that we can only have 1 component instance of each component class this way...
+        // ...which seems to be fine
+        this.#components[paramComponent.constructor.name] = paramComponent;
+
+        // then we can initialize the component
+        paramComponent.methodInitialize();
+    }
+
+    // registers
+
+    methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandler)
+    {
+        console.log("register invokable handler!");
+        console.log(paramInvokableHandlerName);
+
+        // if we do not have an array at that index
+        // we need to create it
+        // so that we can push to it
+        const nameIsInInvokableHandlers = (paramInvokableHandlerName in this.#invokableHandlers);
+        if(!nameIsInInvokableHandlers)
+        {
+            this.#invokableHandlers[paramInvokableHandlerName] = [];
+        }
+
+        // now we know we have a list at that index
+        // so we can push
+        this.#invokableHandlers[paramInvokableHandlerName].push(paramInvokableHandler);
+    }
+
+    // lifecycle
+
+    methodUpdate(timeElapsed, timeDelta)
+    {
+        /*
+        if (this.#onlyOnce == true)
+        {
+            return;
+        }
+        this.#onlyOnce = true;
+
+        console.log(".#components :");
+        console.log(this.#components);*/
+
+        for (const [key, value] of Object.entries(this.#components))
+        {
+            /*console.log("key and value : ");
+            console.log(key);
+            console.log(value);
+
+            console.log("value.methodUpdate : ");
+            console.log(value.methodUpdate);
+
+            console.log("attempt : ");*/
+            value.methodUpdate(timeElapsed, timeDelta);
+        }
+    }
+
+    // ...
+
+    methodBroadcastMessage(paramMessage)
+    {
+        // early return: we need to have a handler that matches message
+        const weHaveAnInvokableHandlerThatMatchesMessage = (paramMessage.invokableHandler in this.#invokableHandlers);
+        if(!weHaveAnInvokableHandlerThatMatchesMessage){console.error("no matching handler: " + paramMessage.invokableHandler);return;}
+
+        // javascript version of for each
+        // iterates over
+        // invokable handler functions that matches message
+        for(const iteratorInvokableHandlerInvoke of this.#invokableHandlers[paramMessage.invokableHandler])
+        {
+            // our iterator variable is now an invokable function!
+            // we actually invoke it right now
+            // I dearly wish the syntax was more obvious on this
+            // tried to mitigate the confusion with verbose naming
+            iteratorInvokableHandlerInvoke(paramMessage);
+        }
+    }
+}
