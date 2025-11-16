@@ -10,6 +10,7 @@ export class EntityManager
 {
     #params = null;
     #entities = null;
+    #idCounter = null;
     constructor(params)
     {
         //
@@ -21,8 +22,11 @@ export class EntityManager
         // we know how to loop through objects now...
         // ...so perhaps that is preferable?
         // SimonDev stores both...
-        // ...but that seems unnecessary
+        // ...but initial thought: that seems unnecessary
         this.#entities = [];
+
+        //
+        this.#idCounter = 0;
     }
 
     // adders
@@ -32,9 +36,8 @@ export class EntityManager
         //
         if(!paramEntityName)
         {
-            // we could generate a new unique name
-            // or just something else
-            paramEntityName = paramEntity.constructor.name;
+            // we generate a unique name based on an increasing id count
+            paramEntityName = this.methodGenerateName();
         }
 
         // again, either array or object
@@ -43,6 +46,9 @@ export class EntityManager
         //
         paramEntity.methodSetParent(this);
         paramEntity.methodSetName(paramEntityName);
+
+        // this doesn't seem entirely necessary, but what's the harm?
+        paramEntity.methodInitialize();
     }
 
     // getters
@@ -50,6 +56,18 @@ export class EntityManager
     methodGetEntityByIndex(index)
     {
         return this.#entities[index];
+    }
+    methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude)
+    {
+        const result = [];
+        for(const iteratorEntity of this.#entities)
+        {
+            const a = iteratorEntity.methodGetComponent(paramComponentName);
+            if(a == null || a == undefined){continue;}
+            if(iteratorEntity.methodGetName() == paramEntityNameToExclude){continue;}
+            result.push(iteratorEntity);
+        }
+        return result;
     }
 
     // lifecycle
@@ -82,5 +100,13 @@ export class EntityManager
         //{
         //    console.log(`${key}: ${value}`);
         //}
+    }
+
+    // "helpers" / generators
+
+    methodGenerateName()
+    {
+        this.#idCounter++;
+        return ("entityName" + this.#idCounter);
     }
 }

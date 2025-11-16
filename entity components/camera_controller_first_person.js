@@ -26,6 +26,7 @@ export class EntityComponentCameraControllerFirstPersonInput extends EntityCompo
             right: false,
             reset: false,
         };
+
         document.addEventListener('keydown', (e) => this.methodEventOnKeyDown(e), false);
         document.addEventListener('keyup', (e) => this.methodEventOnKeyUp(e), false);
         //
@@ -108,6 +109,14 @@ export class EntityComponentCameraControllerFirstPerson extends EntityComponent
         this.#directionForwardNonvertical = new THREE.Vector3(0,0,-1);
         this.#directionRight = new THREE.Vector3(1,0,0);
         this.#directionRightNonvertical = new THREE.Vector3(1,0,0);
+
+        // once at start, we update perpendiculars
+        this.methodUpdatePerpendiculars();
+
+        // register handlers
+        
+        this.methodRegisterInvokableHandler('update.position', (paramMessage) => { this.methodHandleUpdatePosition(paramMessage); });
+        //this.methodRegisterInvokableHandler('update.rotations', (paramMessage) => { this.methodHandleUpdateRotations(paramMessage); });
     }
     methodUpdate()
     {
@@ -115,6 +124,7 @@ export class EntityComponentCameraControllerFirstPerson extends EntityComponent
         const componentInstanceInput = this.methodGetComponent("EntityComponentCameraControllerFirstPersonInput");
         // early return: no entity component instance
         if(componentInstanceInput == null){return;}
+
 
         // sort of early return
         // if reset is pressed we don't need to do anything below
@@ -142,9 +152,21 @@ export class EntityComponentCameraControllerFirstPerson extends EntityComponent
         else if(componentInstanceInput.keys.down){speedY = -0.02;}
         else{speedY = componentInstanceInput.mouseY * -0.001;}
 
+        // early return: we don't do anything if we don't have anything
+        if(speedX == 0 && speedY == 0){return;}
+
         //
         this.#params.camera.rotateX(speedY);
         this.#params.cameraPivot.rotateY(speedX);
+
+
+        // IF we want to broadcast to other components that we have changed rotation
+
+        //
+        const resultRotationCamera = new THREE.Quaternion().copy(this.#params.camera.quaternion);
+        const resultRotationCameraPivot = new THREE.Quaternion().copy(this.#params.cameraPivot.quaternion);
+        // in order to broadcast to other components that we have changed rotation
+        this.methodSetRotations(resultRotationCameraPivot, resultRotationCamera);
 
         // when we are done with using mouse
         // we reset it
@@ -173,5 +195,19 @@ export class EntityComponentCameraControllerFirstPerson extends EntityComponent
         // when will we use the unformatted version of directionRight? idk, but here it is
         this.#directionRight.crossVectors(this.#params.scene.up, this.#directionForward);
         this.#directionRightNonvertical.crossVectors(this.#params.scene.up, this.#directionForwardNonvertical);
+    }
+
+    // handlers
+
+    methodHandleUpdatePosition(paramMessage)
+    {
+        // important to remember that we are sent the entire message, not Just the value
+        this.#params.cameraPivot.position.copy(paramMessage.invokableHandlerValue);
+    }
+    methodHandleUpdateRotations(paramMessage)
+    {
+        return;
+        this.#params.camera.quaternion.copy(paramMessage.invokableHandlerValue.rotationB);
+        this.#params.cameraPivot.quaternion.copy(resultRotationCamera.invokableHandlerValue.rotationA);
     }
 }

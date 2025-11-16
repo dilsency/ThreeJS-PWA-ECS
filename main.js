@@ -12,6 +12,9 @@ import {EntityComponentPlayerController} from "player";
 import {EntityComponentPlayerControllerInput} from "player";
 import {EntityComponentTestCube} from "./entity components/test_objects.js";
 import {EntityComponentButtonPointerLock} from "./entity components/test_objects.js";
+import { EntityComponentHitboxManager } from "./entity components/hitbox.js";
+import { EntityComponentHitbox } from "./entity components/hitbox.js";
+import { EntityComponentHurtbox } from "./entity components/hitbox.js";
 
 // bare minimum
 var scene;
@@ -98,25 +101,31 @@ function init()
 
         //
         const entityA = new Entity(null);
+        entityManager.methodAddEntity(entityA);
         //
         entityA.methodAddComponent(new EntityComponentCameraControllerFirstPerson({scene: scene, camera: camera, cameraPivot: cameraPivot,}));
         entityA.methodAddComponent(new EntityComponentCameraControllerFirstPersonInput());
         //
         entityA.methodAddComponent(new EntityComponentPlayerController({cameraPivot: cameraPivot,}));
         entityA.methodAddComponent(new EntityComponentPlayerControllerInput());
-
         //
-        entityManager.methodAddEntity(entityA);
+        entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
+        entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
+        entityA.methodAddComponent(new EntityComponentHitbox({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:true,}));
+        //
 
         //
         const entityB = new Entity(null);
-        entityB.methodAddComponent(new EntityComponentTestCube({scene:scene,}));
         entityManager.methodAddEntity(entityB);
+        entityB.methodAddComponent(new EntityComponentTestCube({scene:scene,name:"model",}));
+        entityB.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: false,}));
+        entityB.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
+        entityB.methodAddComponent(new EntityComponentHitbox({scene: scene,}));
 
         //
         const entityC = new Entity(null);
-        entityC.methodAddComponent(new EntityComponentButtonPointerLock({document:document,renderer:renderer,}));
         entityManager.methodAddEntity(entityC);
+        entityC.methodAddComponent(new EntityComponentButtonPointerLock({document:document,renderer:renderer,}));
     }
 
     //

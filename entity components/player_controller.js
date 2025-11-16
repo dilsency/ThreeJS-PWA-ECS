@@ -85,6 +85,10 @@ export class EntityComponentPlayerController extends EntityComponent
         this.#params = params;
     }
 
+    // lifecycle
+
+    methodInitialize(){}
+
     methodUpdate()
     {
         const componentInstanceInput = this.methodGetComponent("EntityComponentPlayerControllerInput");
@@ -96,6 +100,12 @@ export class EntityComponentPlayerController extends EntityComponent
         // early return: no entity component instance
         if(componentInstanceCameraControllerFirstPerson == null){return;}
 
+
+        // a result variable
+        // we modify this
+        // and then .SetPosition in the end
+        const positionResult = new THREE.Vector3();
+        positionResult.copy(this.#params.cameraPivot.position);
         
         // we can use this index to determine if we should move in the first place
         // and also
@@ -105,7 +115,8 @@ export class EntityComponentPlayerController extends EntityComponent
         else if(componentInstanceInput.keys.backward == true) {indexMovingOnForwardBackwardAxis = -1;}
         if(indexMovingOnForwardBackwardAxis != 0)
         {
-            this.#params.cameraPivot.position.addScaledVector(componentInstanceCameraControllerFirstPerson.directionForwardNonvertical, 0.05 * indexMovingOnForwardBackwardAxis);
+            positionResult.addScaledVector(componentInstanceCameraControllerFirstPerson.directionForwardNonvertical, 0.05 * indexMovingOnForwardBackwardAxis);
+            //this.#params.cameraPivot.position.addScaledVector(componentInstanceCameraControllerFirstPerson.directionForwardNonvertical, 0.05 * indexMovingOnForwardBackwardAxis);
         }
 
         // we can use this index to determine if we should move in the first place
@@ -116,17 +127,30 @@ export class EntityComponentPlayerController extends EntityComponent
         else if(componentInstanceInput.keys.right == true) {indexMovingOnLeftRightAxis = -1;}
         if(indexMovingOnLeftRightAxis != 0)
         {
-            this.#params.cameraPivot.position.addScaledVector(componentInstanceCameraControllerFirstPerson.directionRightNonvertical, 0.05 * indexMovingOnLeftRightAxis);
+            positionResult.addScaledVector(componentInstanceCameraControllerFirstPerson.directionRightNonvertical, 0.05 * indexMovingOnLeftRightAxis);
+            //this.#params.cameraPivot.position.addScaledVector(componentInstanceCameraControllerFirstPerson.directionRightNonvertical, 0.05 * indexMovingOnLeftRightAxis);
         }
 
         //
         if(componentInstanceInput.keys.up == true)
         {
-            this.#params.cameraPivot.position.y += 0.05;
+            positionResult.y += 0.05;
+            //this.#params.cameraPivot.position.y += 0.05;
         }
         else if(componentInstanceInput.keys.down == true)
         {
-            this.#params.cameraPivot.position.y -= 0.05;
+            positionResult.y -= 0.05;
+            //this.#params.cameraPivot.position.y -= 0.05;
         }
+
+        // early return: we don't do anything if we don't have anything
+        const isSameX = (this.#params.cameraPivot.position.x == positionResult.x);
+        const isSameY = (this.#params.cameraPivot.position.y == positionResult.y);
+        const isSameZ = (this.#params.cameraPivot.position.z == positionResult.z);
+        if(isSameX && isSameY && isSameZ){return;}
+
+        // we simply set the position once, at the end
+        // this radiates to all entity_components that has registered that event
+        this.methodSetPosition(positionResult);
     }
 }

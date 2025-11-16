@@ -1,3 +1,7 @@
+// imports
+// base
+import * as THREE from "three";
+
 // ECS architecture
 // https://keep.google.com/u/0/#NOTE/1VZcHow6i1CL34hbKCEnhdlomP1MtBxrzssvUT4wwMWJLCXrubqAjogXsTz7MCC4
 
@@ -21,9 +25,15 @@
 export class Entity
 {
     #params = null;
+
     #name = null;
     #parent = null;
     #components = null;
+
+    #position = null;
+    #rotationA = null;
+    #rotationB = null;
+
     #invokableHandlers = null;
 
     #onlyOnce = null;
@@ -34,6 +44,11 @@ export class Entity
         this.#params = params;
 
         //
+        this.#position = new THREE.Vector3();
+        this.#rotationA = new THREE.Quaternion();
+        this.#rotationB = new THREE.Quaternion();
+
+        //
         this.#components = {};
         this.#invokableHandlers = {};
 
@@ -41,12 +56,32 @@ export class Entity
         this.#onlyOnce = false;
     }
 
+    // lifecycle
+
+    methodInitialize()
+    {
+        console.log("entity initialized (name: "+ this.#name +")");
+    }
+
     // getters
 
+    methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude)
+    {
+        return this.#parent.methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude);
+    }
     methodGetComponent(paramComponentName)
     {
         return this.#components[paramComponentName];
     }
+    methodGetParent(){return this.#parent;}
+    methodGetName(){return this.#name;}
+    methodGetPosition(){return this.#position;}
+    methodGetRotations(){return {rotationA: this.#rotationA, rotationB: rotationB};}
+
+    get Parent(){return this.#parent;}
+    get Name(){return this.#name;}
+    get Position(){return this.#position;}
+    get Rotation(){return {rotationA: this.#rotationA, rotationB: rotationB};}
 
     // setters
 
@@ -55,6 +90,32 @@ export class Entity
     // and we usually don't like the look of setting properties that directly, outside of the class
     methodSetParent(paramParent) { this.#parent = paramParent; }
     methodSetName(paramName) { this.#name = paramName; }
+    methodSetPosition(paramPosition)
+    {
+        this.#position.copy(paramPosition);
+            // supposedly this lets us trickle down our position to each entity_component that needs it
+        this.methodBroadcastMessage({
+            invokableHandlerName: 'update.position',
+            invokableHandlerValue: this.#position,
+        });
+    }
+    methodSetRotation(paramRotation){
+        this.#rotationA.copy(paramRotation);
+            // supposedly this lets us trickle down our rotation to each entity_component that needs it
+        this.methodBroadcastMessage({
+            invokableHandlerName: 'update.rotation',
+            invokableHandlerValue: this.#rotationA,
+        });
+    }
+    methodSetRotations(paramRotationA, paramRotationB){
+        this.#rotationA.copy(paramRotationA);
+        this.#rotationB.copy(paramRotationB);
+            // supposedly this lets us trickle down our rotation to each entity_component that needs it
+        this.methodBroadcastMessage({
+            invokableHandlerName: 'update.rotations',
+            invokableHandlerValue: {rotationA: this.#rotationA, rotationB: this.#rotationB},
+        });
+    }
 
     // adders
 
@@ -74,7 +135,7 @@ export class Entity
 
     // registers
 
-    methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandler)
+    methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandlerValue)
     {
         console.log("register invokable handler!");
         console.log(paramInvokableHandlerName);
@@ -90,7 +151,7 @@ export class Entity
 
         // now we know we have a list at that index
         // so we can push
-        this.#invokableHandlers[paramInvokableHandlerName].push(paramInvokableHandler);
+        this.#invokableHandlers[paramInvokableHandlerName].push(paramInvokableHandlerValue);
     }
 
     // lifecycle
@@ -126,18 +187,27 @@ export class Entity
     methodBroadcastMessage(paramMessage)
     {
         // early return: we need to have a handler that matches message
-        const weHaveAnInvokableHandlerThatMatchesMessage = (paramMessage.invokableHandler in this.#invokableHandlers);
-        if(!weHaveAnInvokableHandlerThatMatchesMessage){console.error("no matching handler: " + paramMessage.invokableHandler);return;}
+        const weHaveAnInvokableHandlerThatMatchesMessage = (paramMessage.invokableHandlerName in this.#invokableHandlers);
+        if(!weHaveAnInvokableHandlerThatMatchesMessage){return;}
 
         // javascript version of for each
         // iterates over
         // invokable handler functions that matches message
-        for(const iteratorInvokableHandlerInvoke of this.#invokableHandlers[paramMessage.invokableHandler])
+        for(const iteratorInvokableHandlerInvoke of this.#invokableHandlers[paramMessage.invokableHandlerName])
         {
             // our iterator variable is now an invokable function!
             // we actually invoke it right now
             // I dearly wish the syntax was more obvious on this
             // tried to mitigate the confusion with verbose naming
+
+            // todo
+
+            // we may or may not want to rename .invokableHandlerName into .messageName
+            // and .invokableHandlerValue into .messageValue
+            // because the entire message is passed on, name and value both
+            // so when we register it later in a component, the naming does become confusing
+            // though it kind of makes sense in this moment
+
             iteratorInvokableHandlerInvoke(paramMessage);
         }
     }

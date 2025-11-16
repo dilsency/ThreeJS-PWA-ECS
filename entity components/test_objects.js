@@ -28,11 +28,22 @@ export class EntityComponentTestCube extends EntityComponent
         const material = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe: true, } );
         this.#cube = new THREE.Mesh( geometry, material );
         this.#params.scene.add(this.#cube);
+
+        // register handlers
+
+        this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
     }
 
     methodUpdate(timeElapsed, timeDelta)
     {
         this.#cube.rotation.y += timeDelta;
+    }
+
+    // handlers
+
+    methodHandleUpdatePosition(paramMessage)
+    {
+        this.#cube.position.copy(paramMessage.invokableHandlerValue);
     }
 }
 
@@ -58,12 +69,12 @@ export class EntityComponentButtonPointerLock extends EntityComponent
     methodInitialize()
     {
         //
-        this.#params.document.addEventListener("pointerlockchange", this.methodOnPointerLockChange, false);
-        this.#params.document.addEventListener("pointerlockerror", this.methodOnPointerLockError, false);
+        this.#params.document.addEventListener("pointerlockchange", this.methodOnPointerLockChange.bind(this), false);
+        this.#params.document.addEventListener("pointerlockerror", this.methodOnPointerLockError.bind(this), false);
 
         //
         this.#elementButton = this.#params.document.createElement("button");
-        this.#elementButton.innerText = "hello there";
+        this.#elementButton.innerText = "PointerLock";
         this.#elementButton.style.position = "fixed";
         this.#elementButton.style.top = "0";
         this.#elementButton.style.left = "0";
@@ -79,25 +90,32 @@ export class EntityComponentButtonPointerLock extends EntityComponent
 
     async methodOnClickButton(e)
     {
-        if(this.#isVisibleButton == true)
-        {
-            this.#isVisibleButton = false;
-            this.#elementButton.style.display = "none";
-            await this.#params.renderer.domElement.requestPointerLock();
-        }
-        else if(this.#isVisibleButton == false)
-        {
-            this.#isVisibleButton = true;
-            this.#elementButton.style.display = "block";
-        }
+        await this.#params.renderer.domElement.requestPointerLock();
     }
 
     methodOnPointerLockChange(e)
     {
-
+        //
+        const res = this.methodGetIsPointerLocked();
+        if(!res)
+        {
+            this.#isVisibleButton = true;
+            this.#elementButton.style.display = "block";
+        }
+        else {
+            this.#isVisibleButton = false;
+            this.#elementButton.style.display = "none";
+        }
     }
     methodOnPointerLockError(e)
     {
         
+    }
+
+    methodGetIsPointerLocked()
+    {
+        const res = (this.#params.document.pointerLockElement == null || this.#params.document.pointerLockElement == undefined || this.#params.document.pointerLockElement !== this.#params.renderer.domElement);
+
+        return !res;
     }
 }

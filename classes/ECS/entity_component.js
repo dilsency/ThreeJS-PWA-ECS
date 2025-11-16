@@ -17,19 +17,40 @@ export class EntityComponent
     }
 
     // getters
+    methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude)
+    {
+        return this.#parent.methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude);
+    }
     methodGetComponent(paramComponentName)
     {
         return this.#parent.methodGetComponent(paramComponentName);
     }
+    methodGetParent(){return this.#parent;}
+
+    // getters, but actually for the parent
+
+    methodGetName(){return this.#parent.methodGetName();}
+    methodGetPosition(){return this.#parent.methodGetPosition();}
 
     // setters
     methodSetParent(paramParent){this.#parent = paramParent;}
 
+    // setters, but actually for the parent
+
+    methodSetPosition(paramPosition)
+    {
+        this.#parent.methodSetPosition(paramPosition);
+    }
+    methodSetRotations(paramRotationA, paramRotationB)
+    {
+        this.#parent.methodSetRotations(paramRotationA, paramRotationB);
+    }
+
     // registers
 
-    methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandler)
+    methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandlerValue)
     {
-        this.#parent.methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandler);
+        this.#parent.methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandlerValue);
     }
 
     // lifecycle
