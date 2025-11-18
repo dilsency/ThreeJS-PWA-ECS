@@ -13,6 +13,7 @@ import {EntityComponentPlayerControllerInput} from "player";
 import {EntityComponentTestCube} from "./entity components/test_objects.js";
 import {EntityComponentButtonPointerLock} from "./entity components/test_objects.js";
 import { EntityComponentHitboxManager } from "./entity components/hitbox.js";
+import { EntityComponentHitboxList } from "./entity components/hitbox.js";
 import { EntityComponentHitbox } from "./entity components/hitbox.js";
 import { EntityComponentHurtbox } from "./entity components/hitbox.js";
 
@@ -111,7 +112,13 @@ function init()
         //
         entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
         entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
-        entityA.methodAddComponent(new EntityComponentHitbox({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:true,}));
+        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:true,countSpheres:2,
+            offsetPositions:[
+                {x:-1.5,y:-0.8,z:-1.8},
+                {x:1.5,y:-0.8,z:-1.8},
+            ],
+            radii:[0.5,0.5,],
+        }));
         //
 
         //
@@ -120,7 +127,12 @@ function init()
         entityB.methodAddComponent(new EntityComponentTestCube({scene:scene,name:"model",}));
         entityB.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: false,}));
         entityB.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
-        entityB.methodAddComponent(new EntityComponentHitbox({scene: scene,}));
+        entityB.methodAddComponent(new EntityComponentHitboxList({scene: scene,countSpheres:1,
+            offsetPositions:[
+                {x:0,y:-1.2,z:-0.8},
+            ],
+            radii:[0.5,],
+        }));
 
         //
         const entityC = new Entity(null);

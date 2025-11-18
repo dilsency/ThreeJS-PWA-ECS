@@ -57,7 +57,7 @@ export class EntityComponent
 
     methodInitialize()
     {
-        console.log("entity component initialized: base class");
+        //console.log("entity component initialized: base class");
     }
 
     methodUpdate(timeElapsed, timeDelta) { }

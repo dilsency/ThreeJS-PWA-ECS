@@ -60,7 +60,7 @@ export class Entity
 
     methodInitialize()
     {
-        console.log("entity initialized (name: "+ this.#name +")");
+        //console.log("entity initialized (name: "+ this.#name +")");
     }
 
     // getters
@@ -137,7 +137,7 @@ export class Entity
 
     methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandlerValue)
     {
-        console.log("register invokable handler!");
+        //console.log("register invokable handler!");
         console.log(paramInvokableHandlerName);
 
         // if we do not have an array at that index

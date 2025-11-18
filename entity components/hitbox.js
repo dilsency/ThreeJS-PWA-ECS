@@ -44,39 +44,98 @@ export class EntityComponentHitboxManager extends EntityComponent
         {
             // first the comparison
             // here we need to get the actual sphere data
-            // in our own hitbox and the iteratorEntity 's hurtbox
-            const componentInstanceHitbox = this.methodGetComponent("EntityComponentHitbox");
-            if(componentInstanceHitbox == null || componentInstanceHitbox == undefined){return;}
+            // in our own hitbox(es) and the iteratorEntity 's hurtbox
+            const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
+            if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
             const componentInstanceHurtbox = iteratorEntity.methodGetComponent("EntityComponentHurtbox");
             if(componentInstanceHurtbox == null || componentInstanceHurtbox == undefined){return;}
             // compare distances
 
-            // though we should be mindful of global position
-            const sphereA = new THREE.Sphere();
-            sphereA.center.copy(componentInstanceHitbox.sphereWorldPosition);
-            sphereA.radius = componentInstanceHitbox.sphereRadius;
-            const sphereB = new THREE.Sphere();
-            sphereB.center.copy(componentInstanceHurtbox.sphereWorldPosition);
-            sphereB.radius = componentInstanceHurtbox.sphereRadius;
-            const isIntersecting = sphereA.intersectsSphere(sphereB);
-            //
-            if(!isIntersecting)
-                {
-                    return;
-                }
-            // then if that's true, the broadcast
-            iteratorEntity.methodBroadcastMessage({
-                invokableHandlerName: 'battleevent.takedamage',
-                invokableHandlerValue: 0.1,
-            });
+            // we do the next step in another function for readability
+            const res = this.methodUpdateHitboxIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox);
+            
+
         }
-        /*
-        for(var i = 0; i < listEntities.length; i++)
-        {
-            listEntities[i].methodTakeDamage();
-        }
-        */
     }
+
+    methodUpdateHitboxIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
+    {
+            // since we have multiple hitboxes, we need to loop through them
+            for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
+            {
+                // though we should be mindful of global position
+                const sphereA = new THREE.Sphere();
+                sphereA.center.copy(iteratorHitbox.sphereWorldPosition);
+                sphereA.radius = iteratorHitbox.sphereRadius * 2;
+                const sphereB = new THREE.Sphere();
+                sphereB.center.copy(componentInstanceHurtbox.sphereWorldPosition);
+                sphereB.radius = componentInstanceHurtbox.sphereRadius * 2;
+                const isIntersecting = sphereA.intersectsSphere(sphereB);
+                // early continue: no intersection
+                if(!isIntersecting)
+                {
+                    continue;
+                }
+                // but if we do intersect, then broadcast
+                iteratorEntity.methodBroadcastMessage({
+                    invokableHandlerName: 'battleevent.takedamage',
+                    invokableHandlerValue: 0.1,
+                });
+                return true;
+            }
+            return false;
+    }
+}
+
+//
+export class EntityComponentHitboxList extends EntityComponent
+{
+    // bare minimum
+    #params = null;
+
+    //
+    #arraySpheres = [];
+    #arraySpheresCount = 0;
+    #arraySpheresRadius = [];
+    #arraySpheresPositionOffset = [];
+
+    // construct
+    constructor(params)
+    {
+        //
+        super(params);
+        this.#params = params;
+
+        //
+        this.#arraySpheresCount = this.#params.countSpheres;
+        this.#arraySpheresPositionOffset = this.#params.offsetPositions;
+        this.#arraySpheresRadius = this.#params.radii;
+    }
+
+    // getters
+
+    get arraySpheres(){return this.#arraySpheres;}
+
+    // lifecycle
+
+    methodInitialize()
+    {
+        //
+        for(var i = 0; i < this.#arraySpheresCount; i++)
+        {
+            // reminder: ... places all of the contents in #params into the object
+            const s = new EntityComponentHitbox({...this.#params,offsetPosition:this.#arraySpheresPositionOffset[i],radius:this.#arraySpheresRadius[i],});
+            s.methodSetParent(this);
+            s.methodInitialize();
+            this.#arraySpheres.push(s);
+        }
+        
+        //
+        console.log(this.methodGetName() + " has these ("+ this.#arraySpheresCount +") spheres for hitboxes:");
+        console.log(this.#arraySpheres);
+    }
+
+    methodUpdate(){}
 }
 
 //
@@ -90,7 +149,6 @@ export class EntityComponentHitbox extends EntityComponent
     #sphereRadius = 0.5;
     #sphereWorldPosition = null;
     #spherePositionOffset = {x:0,y:-1.2,z:-0.8};
-    #capsuleRotationOffset = {x:0.5,y:0,z:0,w:0};
 
     // construct
     constructor(params)
@@ -98,7 +156,10 @@ export class EntityComponentHitbox extends EntityComponent
         super(params);
         this.#params = params;
 
+        //
         this.#sphereWorldPosition = new THREE.Vector3();
+        this.#spherePositionOffset = this.#params.offsetPosition;
+        this.#sphereRadius = this.#params.radius;
     }
 
     // getters
@@ -188,10 +249,10 @@ export class EntityComponentHitbox extends EntityComponent
     methodHandleUpdatePosition(paramMessage)
     {
         if(this.#params.isFixedToCamera != true)
-            {
-        this.#sphere.position.copy(paramMessage.invokableHandlerValue);
-        this.methodMoveHitboxByOffset();
-            }
+        {
+            this.#sphere.position.copy(paramMessage.invokableHandlerValue);
+            this.methodMoveHitboxByOffset();
+        }
     }
 }
 
