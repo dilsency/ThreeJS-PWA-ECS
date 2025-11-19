@@ -166,7 +166,7 @@ export class EntityComponentCameraControllerFirstPerson extends EntityComponent
         const resultRotationCamera = new THREE.Quaternion().copy(this.#params.camera.quaternion);
         const resultRotationCameraPivot = new THREE.Quaternion().copy(this.#params.cameraPivot.quaternion);
         // in order to broadcast to other components that we have changed rotation
-        this.methodSetRotations(resultRotationCameraPivot, resultRotationCamera);
+        this.methodSetRotations(resultRotationCameraPivot, speedX, resultRotationCamera, speedY);
 
         // when we are done with using mouse
         // we reset it

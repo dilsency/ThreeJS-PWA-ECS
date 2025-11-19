@@ -107,13 +107,13 @@ export class Entity
             invokableHandlerValue: this.#rotationA,
         });
     }
-    methodSetRotations(paramRotationA, paramRotationB){
+    methodSetRotations(paramRotationA, paramRotationADelta, paramRotationB, paramRotationBDelta){
         this.#rotationA.copy(paramRotationA);
         this.#rotationB.copy(paramRotationB);
             // supposedly this lets us trickle down our rotation to each entity_component that needs it
         this.methodBroadcastMessage({
             invokableHandlerName: 'update.rotations',
-            invokableHandlerValue: {rotationA: this.#rotationA, rotationB: this.#rotationB},
+            invokableHandlerValue: {rotationA: this.#rotationA, rotationADelta: paramRotationADelta, rotationB: this.#rotationB, rotationBDelta: paramRotationBDelta},
         });
     }
 

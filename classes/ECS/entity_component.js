@@ -41,9 +41,9 @@ export class EntityComponent
     {
         this.#parent.methodSetPosition(paramPosition);
     }
-    methodSetRotations(paramRotationA, paramRotationB)
+    methodSetRotations(paramRotationA, paramRotationADelta, paramRotationB, paramRotationBDelta)
     {
-        this.#parent.methodSetRotations(paramRotationA, paramRotationB);
+        this.#parent.methodSetRotations(paramRotationA, paramRotationADelta, paramRotationB, paramRotationBDelta);
     }
 
     // registers

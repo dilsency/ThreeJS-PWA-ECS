@@ -3,6 +3,8 @@
 import * as THREE from "three";
 // ECS
 import {EntityComponent} from "entity_component";
+//
+import { rotateObjectAboutPoint } from "../helpers/helper_rotation.js";
 
 //
 export class EntityComponentHitboxManager extends EntityComponent
@@ -371,6 +373,7 @@ export class EntityComponentHitbox extends EntityComponent
         // register handlers
 
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
+        this.methodRegisterInvokableHandler('update.rotations', (paramMessage) =>{ this.methodHandleUpdateRotations(paramMessage);});
     }
 
     methodUpdate(timeElapsed, timeDelta)
@@ -418,6 +421,25 @@ export class EntityComponentHitbox extends EntityComponent
         // have a fake test point as a child from the camera
         // rotate around the player
         // and then just copy that position?
+    }
+    methodHandleUpdateRotations(paramMessage)
+    {
+        // this does NOT work when moving and rotating at the same time, crying face
+
+        //
+        const theta = paramMessage.invokableHandlerValue.rotationADelta;
+
+        // https://stackoverflow.com/a/42866733
+        // this rotates the hitbox by a delta
+        // we WOULD also like to have the alternative to just SET the rotation
+        // I guess that is a todo
+        rotateObjectAboutPoint(
+            this.#sphere,
+            this.methodGetPosition(),
+            new THREE.Vector3(0,1,0),
+        theta,
+        true
+        );
     }
 
     // other
