@@ -59,7 +59,7 @@ function init()
         //
         cameraPivot = new THREE.Object3D();
         cameraPivot.name = "cameraPivot";
-        cameraPivot.position.z = 5;
+        //cameraPivot.position.z = 5;
         scene.add(cameraPivot);
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -112,13 +112,15 @@ function init()
         //
         entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
         entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
-        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:true,countSpheres:2,
+        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,countSpheres:2,
             offsetPositions:[
                 {x:-1.5,y:-0.8,z:-1.8},
                 {x:1.5,y:-0.8,z:-1.8},
             ],
             radii:[0.5,0.5,],
         }));
+
+        entityA.methodSetPosition(new THREE.Vector3(0.0,0.0,5.0));
         //
 
         //
@@ -133,6 +135,10 @@ function init()
             ],
             radii:[0.5,],
         }));
+
+        //
+        console.log("ask to init lines:");
+        entityA.methodGetComponent("EntityComponentHitboxManager").methodInitializeLines();
 
         //
         const entityC = new Entity(null);
@@ -166,7 +172,7 @@ function update()
     updateWindowSize();
 
     //
-    updateEntityComponents();
+    updateEntityComponentSystem();
 
     // must be last
     renderer.render(scene, camera);
@@ -194,7 +200,7 @@ function updateWindowSize()
     }
 }
 
-function updateEntityComponents()
+function updateEntityComponentSystem()
 {
     entityManager.methodUpdate(clockTimeElapsed, clockTimeDelta);
 }

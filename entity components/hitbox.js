@@ -13,6 +13,13 @@ export class EntityComponentHitboxManager extends EntityComponent
     //
     #isEnabled = null;
 
+    // testing
+    #hasInitializedLines = false;
+    #lines = [];
+    #linesPoints = [];
+    #linesPointsInitial = [];
+    #hasRanOnce = false;
+
     // construct
     constructor(params)
     {
@@ -28,6 +35,10 @@ export class EntityComponentHitboxManager extends EntityComponent
     methodInitialize()
     {
         // assign the player's hitboxes here?
+
+        // register handlers
+
+        this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
     }
 
     methodUpdate(timeElapsed, timeDelta)
@@ -39,16 +50,19 @@ export class EntityComponentHitboxManager extends EntityComponent
         const listEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtbox", this.methodGetName());
         // early return
         if(listEntities == null || listEntities == undefined || listEntities.length <= 0){return;}
+
+        // we only need to get our own component once (it doesn't depend on the loop)
+        const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
+        if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
+
         // loop through them all and compare sphere distances
         for(const iteratorEntity of listEntities)
         {
             // first the comparison
             // here we need to get the actual sphere data
             // in our own hitbox(es) and the iteratorEntity 's hurtbox
-            const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
-            if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
             const componentInstanceHurtbox = iteratorEntity.methodGetComponent("EntityComponentHurtbox");
-            if(componentInstanceHurtbox == null || componentInstanceHurtbox == undefined){return;}
+            if(componentInstanceHurtbox == null || componentInstanceHurtbox == undefined){continue;}
             // compare distances
 
             // we do the next step in another function for readability
@@ -56,6 +70,133 @@ export class EntityComponentHitboxManager extends EntityComponent
             
 
         }
+    }
+
+    // handlers
+
+    methodHandleUpdatePosition(paramMessage)
+    {
+        //
+        /*
+        console.log(" ");
+        console.log("our lines points:");
+        console.log(this.#linesPoints[0]);
+        console.log(paramMessage.invokableHandlerValue);
+        */
+        //this.methodUpdatePositionLines(paramMessage);
+        for(var i = 0; i < this.#lines.length; i++)
+        {
+            this.#linesPoints[i][0].x = paramMessage.invokableHandlerValue.x + this.#linesPointsInitial[i][0].x;
+            this.#linesPoints[i][0].y = paramMessage.invokableHandlerValue.y + this.#linesPointsInitial[i][0].y;
+            this.#linesPoints[i][0].z = paramMessage.invokableHandlerValue.z + this.#linesPointsInitial[i][0].z;
+            this.#lines[i].geometry.setFromPoints(this.#linesPoints[i]);
+        }
+    }
+
+    // other
+
+    methodInitializeLines()
+    {
+        // this is called manually from main.js
+        // this is because we actually need all objects to be initialized on the scene FIRST
+        // before we can draw anything
+
+        console.log(this.methodGetName());
+        console.log("init lines");
+
+        // early return: we have already initialized
+        if(this.#hasInitializedLines == true){return;}
+
+        // get all enemy hurtboxes
+        const listEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtbox", this.methodGetName());
+        // early return
+        if(listEntities == null || listEntities == undefined || listEntities.length <= 0){return;}
+
+        // we only need to get our own component once (it doesn't depend on the loop)
+        const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
+        if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
+
+        // loop through them all and compare sphere distances
+        for(const iteratorEntity of listEntities)
+        {
+            // first the comparison
+            // here we need to get the actual sphere data
+            // in our own hitbox(es) and the iteratorEntity 's hurtbox
+            const componentInstanceHurtbox = iteratorEntity.methodGetComponent("EntityComponentHurtbox");
+            if(componentInstanceHurtbox == null || componentInstanceHurtbox == undefined){continue;}
+            // compare distances
+
+            // we do the next step in another function for readability
+            const res = this.methodInitializeLinesIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox);
+        }
+
+        // end: everything seems to be ok
+        console.log("our lines:");
+        console.log(this.#lines);
+        this.#hasInitializedLines = true;
+    }
+
+    methodInitializeLinesIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
+    {
+        for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
+        {
+            const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, } );
+            const points = [];
+            //points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
+            //points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
+            points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
+            points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
+            console.log(points);
+            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+            const line = new THREE.Line( geometry, material );
+            this.#params.scene.add(line);
+            this.#lines.push(line);
+            this.#linesPoints.push(points);
+            this.#linesPointsInitial.push(points);
+        }
+    }
+
+    methodUpdatePositionLines(paramMessage)
+    {
+        // early return: we have no lines, no need to update them
+        if(this.#lines.length <= 0){return;}
+
+        // get all enemy hurtboxes
+        const listEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtbox", this.methodGetName());
+        // early return
+        if(listEntities == null || listEntities == undefined || listEntities.length <= 0){return;}
+
+        // we only need to get our own component once (it doesn't depend on the loop)
+        const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
+        if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
+
+        // loop through them all and compare sphere distances
+        for(const iteratorEntity of listEntities)
+        {
+            // first the comparison
+            // here we need to get the actual sphere data
+            // in our own hitbox(es) and the iteratorEntity 's hurtbox
+            const componentInstanceHurtbox = iteratorEntity.methodGetComponent("EntityComponentHurtbox");
+            if(componentInstanceHurtbox == null || componentInstanceHurtbox == undefined){continue;}
+            // compare distances
+
+            // we do the next step in another function for readability
+            const res = this.methodUpdatePositionLinesIteration(paramMessage, listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox);
+        }
+    }
+
+    methodUpdatePositionLinesIteration(paramMessage, listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
+    {
+        var index = 0;
+        for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
+        {
+            const points = [];
+            points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
+            points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
+            this.#lines[index].geometry.setFromPoints( points );
+            index++;
+        }
+        index = 0;
     }
 
     methodUpdateHitboxIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
@@ -81,6 +222,32 @@ export class EntityComponentHitboxManager extends EntityComponent
                     invokableHandlerName: 'battleevent.takedamage',
                     invokableHandlerValue: 0.1,
                 });
+                if(this.#hasRanOnce != true)
+                {
+                    console.log(" ");
+                    console.log("hitbox (us ourselves) first:");
+                    console.log("entity position :");
+                    console.log(this.methodGetPosition());
+
+                    console.log("sphereA.center :");
+                    console.log(sphereA.center);
+                    console.log("["+ sphereA.radius +"] sphereA.radius");
+
+                    console.log(" ");
+                    console.log("hurtbox (anyone else) second:");
+                    console.log("entity position :");
+                    console.log(iteratorEntity.methodGetPosition());
+
+                    console.log("sphereB.center :");
+                    console.log(sphereB.center);
+                    console.log("["+ sphereB.radius +"] sphereB.radius");
+
+                    console.log(" ");
+                    console.log("distance between centers:");
+                    console.log(sphereA.distanceToPoint(sphereB.center));
+
+                    this.#hasRanOnce = true;
+                }
                 return true;
             }
             return false;
@@ -206,19 +373,6 @@ export class EntityComponentHitbox extends EntityComponent
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
     }
 
-    methodMoveHitboxByOffset()
-    {
-        //
-        this.#sphere.position.x += this.#spherePositionOffset.x;
-        this.#sphere.position.y += this.#spherePositionOffset.y;
-        this.#sphere.position.z += this.#spherePositionOffset.z;
-        //
-        //this.#sphere.rotation.x += this.#capsuleRotationOffset.x;
-        //this.#sphere.rotation.y += this.#capsuleRotationOffset.y;
-        //this.#sphere.rotation.z += this.#capsuleRotationOffset.z;
-        //this.#sphere.rotation.w += this.#capsuleRotationOffset.w;
-    }
-
     methodUpdate(timeElapsed, timeDelta)
     {
         return;
@@ -248,11 +402,37 @@ export class EntityComponentHitbox extends EntityComponent
 
     methodHandleUpdatePosition(paramMessage)
     {
-        if(this.#params.isFixedToCamera != true)
-        {
-            this.#sphere.position.copy(paramMessage.invokableHandlerValue);
-            this.methodMoveHitboxByOffset();
-        }
+        if(this.#params.isFixedToCamera == true){return;}
+
+        this.#sphere.position.copy(paramMessage.invokableHandlerValue);
+        //this.#sphere.position.copy(this.methodGetPosition());
+        this.methodMoveHitboxByOffset();
+
+
+        // how to handle rotations?
+        // we are not currently a child of the camera, mind you
+
+        // one idea is to google threejs rotate around point
+
+        // another is:
+        // have a fake test point as a child from the camera
+        // rotate around the player
+        // and then just copy that position?
+    }
+
+    // other
+
+    methodMoveHitboxByOffset()
+    {
+        //
+        this.#sphere.position.x += this.#spherePositionOffset.x;
+        this.#sphere.position.y += this.#spherePositionOffset.y;
+        this.#sphere.position.z += this.#spherePositionOffset.z;
+        //
+        //this.#sphere.rotation.x += this.#capsuleRotationOffset.x;
+        //this.#sphere.rotation.y += this.#capsuleRotationOffset.y;
+        //this.#sphere.rotation.z += this.#capsuleRotationOffset.z;
+        //this.#sphere.rotation.w += this.#capsuleRotationOffset.w;
     }
 }
 
