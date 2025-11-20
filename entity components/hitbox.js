@@ -242,6 +242,25 @@ export class EntityComponentHitboxManager extends EntityComponent
                     invokableHandlerName: 'battleevent.takedamage',
                     invokableHandlerValue: 0.1,
                 });
+                // with future knowledge we know that we should re-check the lines here
+                // but actually hurtbox.js should handle that
+                // or more specifically battleevent.takedamage
+                // BUT
+                // hurtbox.js has no reference to this here hitbox manager
+                // and it would be unreasonable to expect it to have that
+                // so we do run it ourselves
+                this.methodUpdatePositionLines(null);
+                // the alternative would be to update every frame
+                // which we might have to do anyway lmao
+                // since we currently don't account for the enemy moving on their own
+                // and we can ASSUME that SOMETHING will move every frame
+
+                // OR
+                // every update position
+                // will check all entities with component hitbox manager
+                // including itself
+
+
                 if(this.#hasRanOnce != true)
                 {
                     /*
@@ -444,8 +463,12 @@ export class EntityComponentHitbox extends EntityComponent
         //this.#sphere.position.copy(this.methodGetPosition());
         this.methodMoveHitboxByOffset();
 
-        //
-        this.methodSetRotationAroundCenter();
+        // only if we have a camera do we do this
+        // otherwise we should have an equivalent without the camera
+        if(this.#params.cameraPivot != null)
+        {
+            this.methodSetRotationAroundCenter();
+        }
 
         // and then we rotate based on our current rotation?
         // it works!!!
@@ -501,6 +524,7 @@ export class EntityComponentHitbox extends EntityComponent
         if(this.#params.cameraPivot == null || this.#params.cameraPivot == undefined)
         {
             console.error("no cameraPivot | name: " + this.methodGetName());
+            console.log("well... why are we trying to set the rotation of entity2 in the first place?");
             return;
         }
 
@@ -621,5 +645,9 @@ export class EntityComponentHurtbox extends EntityComponent
         a.copy(this.methodGetPosition());
         a.y += 0.1;
         this.methodSetPosition(a);
+
+        // this updates our position
+        // but it doesn't update the hitboxmanager of the enemy
+        // so we're going to have to do that in the hitbox manager
     }
 }
