@@ -4,7 +4,7 @@ import * as THREE from "three";
 // ECS
 import {EntityComponent} from "entity_component";
 //
-import { rotateObjectAboutPoint } from "../helpers/helper_rotation.js";
+import { rotateObjectAboutPoint, setRotationOfObjectAboutPoint } from "../helpers/helper_rotation.js";
 
 //
 export class EntityComponentHitboxManager extends EntityComponent
@@ -20,6 +20,7 @@ export class EntityComponentHitboxManager extends EntityComponent
     #lines = [];
     #linesPoints = [];
     #linesPointsInitial = [];
+    #linesDistances = [];
     #hasRanOnce = false;
 
     // construct
@@ -41,6 +42,7 @@ export class EntityComponentHitboxManager extends EntityComponent
         // register handlers
 
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
+        this.methodRegisterInvokableHandler('update.rotations', (paramMessage) =>{ this.methodHandleUpdateRotations(paramMessage);});
     }
 
     methodUpdate(timeElapsed, timeDelta)
@@ -79,20 +81,12 @@ export class EntityComponentHitboxManager extends EntityComponent
     methodHandleUpdatePosition(paramMessage)
     {
         //
-        /*
-        console.log(" ");
-        console.log("our lines points:");
-        console.log(this.#linesPoints[0]);
-        console.log(paramMessage.invokableHandlerValue);
-        */
-        //this.methodUpdatePositionLines(paramMessage);
-        for(var i = 0; i < this.#lines.length; i++)
-        {
-            this.#linesPoints[i][0].x = paramMessage.invokableHandlerValue.x + this.#linesPointsInitial[i][0].x;
-            this.#linesPoints[i][0].y = paramMessage.invokableHandlerValue.y + this.#linesPointsInitial[i][0].y;
-            this.#linesPoints[i][0].z = paramMessage.invokableHandlerValue.z + this.#linesPointsInitial[i][0].z;
-            this.#lines[i].geometry.setFromPoints(this.#linesPoints[i]);
-        }
+        this.methodUpdatePositionLines(paramMessage);
+    }
+    methodHandleUpdateRotations(paramMessage)
+    {
+        //
+        this.methodUpdatePositionLines(paramMessage);
     }
 
     // other
@@ -142,19 +136,23 @@ export class EntityComponentHitboxManager extends EntityComponent
     {
         for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
         {
-            const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, } );
+            const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, depthTest: false, } );
             const points = [];
             //points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
             //points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
             points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
             points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
             console.log(points);
-            const geometry = new THREE.BufferGeometry().setFromPoints( points );
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            // each time we call setFromPoints we recompute bounding sphere
+            geometry.computeBoundingSphere();
             const line = new THREE.Line( geometry, material );
+            //line.frustumCulled = false;
             this.#params.scene.add(line);
             this.#lines.push(line);
             this.#linesPoints.push(points);
             this.#linesPointsInitial.push(points);
+            this.#linesDistances.push(Math.abs(points[0].distanceTo(points[1])));
         }
     }
 
@@ -192,10 +190,20 @@ export class EntityComponentHitboxManager extends EntityComponent
         var index = 0;
         for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
         {
-            const points = [];
-            points.push(new THREE.Vector3().copy(iteratorHitbox.sphereWorldPosition));
-            points.push(new THREE.Vector3().copy(componentInstanceHurtbox.sphereWorldPosition));
-            this.#lines[index].geometry.setFromPoints( points );
+            const points = [
+                new THREE.Vector3(0,0,0),
+                new THREE.Vector3(0,10,0),
+            ];
+            // this part is easy
+            // : our own hitbox
+            points[1].copy(iteratorHitbox.spherePositionAfterRotation);
+            // this is the part that doesn't want to work
+            // : the enemy hurtbox
+            points[0].copy(componentInstanceHurtbox.spherePosition);
+            this.#lines[index].geometry.setFromPoints(points);
+            this.#lines[index].geometry.computeBoundingSphere();
+            // we also update the distances
+            this.#linesDistances[index] = (Math.abs(points[0].distanceTo(points[1])));
             index++;
         }
         index = 0;
@@ -203,20 +211,30 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodUpdateHitboxIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
     {
+            var index = 0;
             // since we have multiple hitboxes, we need to loop through them
             for(const iteratorHitbox of componentInstanceHitboxList.arraySpheres)
             {
+                /*
                 // though we should be mindful of global position
                 const sphereA = new THREE.Sphere();
+                // do we use .sphereWorldPosition ?
+                // or .spherePositionAfterRotation ?
                 sphereA.center.copy(iteratorHitbox.sphereWorldPosition);
                 sphereA.radius = iteratorHitbox.sphereRadius * 2;
                 const sphereB = new THREE.Sphere();
                 sphereB.center.copy(componentInstanceHurtbox.sphereWorldPosition);
                 sphereB.radius = componentInstanceHurtbox.sphereRadius * 2;
                 const isIntersecting = sphereA.intersectsSphere(sphereB);
+                */
+
+                // we have already pre-calculated distances, hehe
+                const isIntersecting = (this.#linesDistances[index] < (iteratorHitbox.sphereRadius + componentInstanceHurtbox.sphereRadius));
+
                 // early continue: no intersection
                 if(!isIntersecting)
                 {
+                    index++;
                     continue;
                 }
                 // but if we do intersect, then broadcast
@@ -226,6 +244,7 @@ export class EntityComponentHitboxManager extends EntityComponent
                 });
                 if(this.#hasRanOnce != true)
                 {
+                    /*
                     console.log(" ");
                     console.log("hitbox (us ourselves) first:");
                     console.log("entity position :");
@@ -248,10 +267,13 @@ export class EntityComponentHitboxManager extends EntityComponent
                     console.log("distance between centers:");
                     console.log(sphereA.distanceToPoint(sphereB.center));
 
+                    */
                     this.#hasRanOnce = true;
                 }
+                index++;
                 return true;
             }
+            index = 0;
             return false;
     }
 }
@@ -319,6 +341,8 @@ export class EntityComponentHitbox extends EntityComponent
     #sphereWorldPosition = null;
     #spherePositionOffset = {x:0,y:-1.2,z:-0.8};
 
+    #spherePositionAfterRotation = null;
+
     // construct
     constructor(params)
     {
@@ -329,6 +353,9 @@ export class EntityComponentHitbox extends EntityComponent
         this.#sphereWorldPosition = new THREE.Vector3();
         this.#spherePositionOffset = this.#params.offsetPosition;
         this.#sphereRadius = this.#params.radius;
+
+        //
+        this.#spherePositionAfterRotation = new THREE.Vector3(0,0,0);
     }
 
     // getters
@@ -344,6 +371,8 @@ export class EntityComponentHitbox extends EntityComponent
         return this.#sphereWorldPosition;
     }
     get spherePositionOffset(){return this.#spherePositionOffset;}
+
+    get spherePositionAfterRotation(){return this.#spherePositionAfterRotation;}
 
      // lifecycle
 
@@ -369,6 +398,10 @@ export class EntityComponentHitbox extends EntityComponent
         }
         //
         this.methodMoveHitboxByOffset();
+
+        //
+        this.#spherePositionAfterRotation.copy(this.methodGetPosition());
+        this.#spherePositionAfterRotation.add(this.#spherePositionOffset);
 
         // register handlers
 
@@ -411,6 +444,17 @@ export class EntityComponentHitbox extends EntityComponent
         //this.#sphere.position.copy(this.methodGetPosition());
         this.methodMoveHitboxByOffset();
 
+        //
+        this.methodSetRotationAroundCenter();
+
+        // and then we rotate based on our current rotation?
+        // it works!!!
+        //const theta = this.#params.cameraPivot.rotation.y;
+        //this.methodRotateAroundCenter(theta);
+
+        //
+        //this.#sphere.rotation.y = this.#params.cameraPivot.rotation.y;
+
 
         // how to handle rotations?
         // we are not currently a child of the camera, mind you
@@ -424,11 +468,21 @@ export class EntityComponentHitbox extends EntityComponent
     }
     methodHandleUpdateRotations(paramMessage)
     {
-        // this does NOT work when moving and rotating at the same time, crying face
-
+        //
+        if(this.#params.isFixedToCamera == true){return;}
+        
         //
         const theta = paramMessage.invokableHandlerValue.rotationADelta;
 
+        //
+        //this.methodRotateAroundCenter(theta);
+        this.methodSetRotationAroundCenter();
+    }
+
+    // other
+
+    methodRotateAroundCenter(theta)
+    {
         // https://stackoverflow.com/a/42866733
         // this rotates the hitbox by a delta
         // we WOULD also like to have the alternative to just SET the rotation
@@ -441,9 +495,49 @@ export class EntityComponentHitbox extends EntityComponent
         true
         );
     }
+    methodSetRotationAroundCenter()
+    {
+        // early return
+        if(this.#params.cameraPivot == null || this.#params.cameraPivot == undefined)
+        {
+            console.error("no cameraPivot | name: " + this.methodGetName());
+            return;
+        }
 
-    // other
+        //
+        const posWorld = new THREE.Vector3();
+        posWorld.copy(this.methodGetPosition());
+        const spherePositionOffsetRotated = new THREE.Vector3();
+        spherePositionOffsetRotated.copy(this.#spherePositionOffset);
+        var theta = this.#params.cameraPivot.rotation.y;
+        const epsilon = 0.0001;
+        const isQuadrantHalf = ((this.#params.cameraPivot.rotation.x < -epsilon) || (this.#params.cameraPivot.rotation.z < -epsilon) || (this.#params.cameraPivot.rotation.x > epsilon) || (this.#params.cameraPivot.rotation.z > epsilon));
+        const isQuadrant1 = isQuadrantHalf && this.#params.cameraPivot.rotation.y >= 0;
+        const isQuadrant2 = isQuadrantHalf && this.#params.cameraPivot.rotation.y < 0;
+        if(isQuadrant1)
+        {
+            theta = Math.PI - this.#params.cameraPivot.rotation.y;
+        }
+        else if (isQuadrant2)
+        {
+            theta = Math.PI - this.#params.cameraPivot.rotation.y;
+        }
+        //console.log(" ");
+        //console.log("pivot rotation:");
+        //console.log(this.#params.cameraPivot.rotation);
+        //console.log("non-pivot rotation:");
+        //console.log(this.#params.camera.rotation);
+        spherePositionOffsetRotated.applyAxisAngle(new THREE.Vector3(0,1,0), theta);
+        posWorld.add(spherePositionOffsetRotated);
+        this.#sphere.position.x = posWorld.x;
+        this.#sphere.position.y = posWorld.y;
+        this.#sphere.position.z = posWorld.z;
 
+        //
+        this.#spherePositionAfterRotation.copy(posWorld);
+
+        // update lines too?
+    }
     methodMoveHitboxByOffset()
     {
         //
