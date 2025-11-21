@@ -33,6 +33,10 @@ export class EntityComponentHitboxManager extends EntityComponent
         this.#isEnabled = this.#params.isEnabled;
     }
 
+    // getters
+
+    get hasLines(){return (this.#hasInitializedLines == true);}
+
      // lifecycle
 
     methodInitialize()
@@ -50,16 +54,17 @@ export class EntityComponentHitboxManager extends EntityComponent
         // early return: is not enabled
         if(this.#isEnabled != true){return;}
 
+        // we only need to get our own component once (it doesn't depend on the loop)
+        const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
+        // early return
+        if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
+
         // get all enemy hurtboxes
         const listEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtbox", this.methodGetName());
         // early return
         if(listEntities == null || listEntities == undefined || listEntities.length <= 0){return;}
 
-        // we only need to get our own component once (it doesn't depend on the loop)
-        const componentInstanceHitboxList = this.methodGetComponent("EntityComponentHitboxList");
-        if(componentInstanceHitboxList == null || componentInstanceHitboxList == undefined){return;}
-
-        // loop through them all and compare sphere distances
+        // foreach-loop through them all and compare sphere distances
         for(const iteratorEntity of listEntities)
         {
             // first the comparison
@@ -130,6 +135,8 @@ export class EntityComponentHitboxManager extends EntityComponent
         console.log("our lines:");
         console.log(this.#lines);
         this.#hasInitializedLines = true;
+        console.log("["+ this.#hasInitializedLines +"] .#hasInitializedLines");
+        console.log("["+ this.hasLines +"] .hasLines");
     }
 
     methodInitializeLinesIteration(listEntities, iteratorEntity, componentInstanceHitboxList, componentInstanceHurtbox)
@@ -589,6 +596,9 @@ export class EntityComponentHurtbox extends EntityComponent
     #sphereWorldPosition = null;
     #spherePositionOffset = {x:0,y:-1.2,z:-0.8};
 
+    // testing
+    #modeMoveAround = false;
+
     // construct
     constructor(params)
     {
@@ -627,27 +637,76 @@ export class EntityComponentHurtbox extends EntityComponent
         this.methodRegisterInvokableHandler('battleevent.takedamage', (paramMessage) =>{ this.methodHandleTakeDamage(paramMessage);});
     }
 
-    methodUpdate()
-    {}
+    methodUpdate(timeElapsed, timeDelta)
+    {
+        // early return
+        if(this.#modeMoveAround != true){return;}
+
+        //
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+        pos.x += Math.sin(timeElapsed * 5) * 0.1;
+        this.methodSetPosition(pos);
+    }
 
     // handlers
 
     methodHandleUpdatePosition(paramMessage)
     {
+        // base aka bare minimum
         this.#sphere.position.copy(paramMessage.invokableHandlerValue);
+
+        //
+        this.methodUpdateDistances();
     }
 
     methodHandleTakeDamage(paramMessage)
     {
+        this.#modeMoveAround = true;
+
         //console.log("dmg!!!");
         //console.log(paramMessage.invokableHandlerValue);
-        const a = new THREE.Vector3();
-        a.copy(this.methodGetPosition());
-        a.y += 0.1;
-        this.methodSetPosition(a);
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+        pos.y += 0.1;
+        this.methodSetPosition(pos);
+        // reminder that setposition will also call the update position handler
+        // so we don't need to do that manually
 
         // this updates our position
         // but it doesn't update the hitboxmanager of the enemy
         // so we're going to have to do that in the hitbox manager
+    }
+
+    // other
+
+    methodUpdateDistances()
+    {
+        // to do
+
+        // get all entities that have the HitboxHandler component
+        // and then call the update distances / update lines method on that
+
+        // in the update distances / update lines method...
+        // ...do we perhaps flag that we have updated that frame?
+        // otherwise we do it multiple times per frame...
+        // ...could be unnecessary
+
+        const listEntitiesWithHitboxManagerComponent = this.methodGetEntitiesWithComponent("EntityComponentHitboxManager");
+        // early return
+        if(listEntitiesWithHitboxManagerComponent == null || listEntitiesWithHitboxManagerComponent == undefined || listEntitiesWithHitboxManagerComponent.length <= 0){return;}
+        // foreach-loop through them all and compare sphere distances
+
+        //
+        for(var i = 0; i < listEntitiesWithHitboxManagerComponent.length; i++)
+        {
+            // we get the actual component inside the entity, not just the entity
+            const componentHitboxManager = listEntitiesWithHitboxManagerComponent[i].methodGetComponent("EntityComponentHitboxManager");
+            // early continue: no lines, so we don't need to update
+            if(componentHitboxManager.hasLines != true){continue;}
+            // call the update
+            componentHitboxManager.methodUpdatePositionLines(null);
+        }
+
     }
 }
