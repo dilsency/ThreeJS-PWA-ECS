@@ -165,8 +165,11 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodUpdatePositionLines(paramMessage)
     {
+        // hmm
+        // we SHOULD pre-calculate all distances, regardless of wether we have lines or not
+
         // early return: we have no lines, no need to update them
-        if(this.#lines.length <= 0){return;}
+        //if(this.#lines.length <= 0){return;}
 
         // get all enemy hurtboxes
         const listEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtbox", this.methodGetName());
@@ -207,10 +210,27 @@ export class EntityComponentHitboxManager extends EntityComponent
             // this is the part that doesn't want to work
             // : the enemy hurtbox
             points[0].copy(componentInstanceHurtbox.spherePosition);
+
+            // if we do not have a line here, init it
+            if(this.#lines[index] == null || this.#lines[index] == undefined)
+            {
+                const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, depthTest: false, } );
+                const geometry = new THREE.BufferGeometry();
+                const line = new THREE.Line( geometry, material );
+                //
+                this.#lines[index] = line;
+                this.#linesPoints[index] = points;
+                this.#linesPointsInitial[index] = points;
+                this.#linesDistances[index] = 0;//Math.abs(points[0].distanceTo(points[1]));
+                //
+                this.#params.scene.add(line);
+            }
+
             this.#lines[index].geometry.setFromPoints(points);
             this.#lines[index].geometry.computeBoundingSphere();
             // we also update the distances
             this.#linesDistances[index] = (Math.abs(points[0].distanceTo(points[1])));
+            //
             index++;
         }
         index = 0;
@@ -305,10 +325,14 @@ export class EntityComponentHitboxManager extends EntityComponent
 }
 
 //
-export class EntityComponentHitboxList extends EntityComponent
+export class EntityComponentHitboxListGeneric extends EntityComponent
 {
     // bare minimum
     #params = null;
+
+    // 0 : hurtbox (aka defending)
+    // 1 : hitbox (aka attacking)
+    #type = 0;
 
     //
     #arraySpheres = [];
@@ -324,9 +348,18 @@ export class EntityComponentHitboxList extends EntityComponent
         this.#params = params;
 
         //
+        if(this.#params.type != null && this.#params.type != undefined){
+        this.#type = this.#params.type;
+        }
+        if(this.#params.countSpheres != null && this.#params.countSpheres != undefined){
         this.#arraySpheresCount = this.#params.countSpheres;
+        }
+        if(this.#params.offsetPositions != null && this.#params.offsetPositions != undefined){
         this.#arraySpheresPositionOffset = this.#params.offsetPositions;
+        }
+        if(this.#params.radii != null && this.#params.radii != undefined){
         this.#arraySpheresRadius = this.#params.radii;
+        }
     }
 
     // getters
@@ -356,32 +389,78 @@ export class EntityComponentHitboxList extends EntityComponent
 }
 
 //
-export class EntityComponentHitbox extends EntityComponent
+export class EntityComponentHitboxList extends EntityComponentHitboxListGeneric
+{
+    // override construct
+    // to set type
+    constructor(params)
+    {
+        // override params
+        params.type = 1;
+        // base aka bare minimum
+        super(params);
+    }
+}
+export class EntityComponentHurtboxList extends EntityComponentHitboxListGeneric
+{
+    // override construct
+    // to set type
+    constructor(params)
+    {
+        // override params
+        params.type = 0;
+        // base aka bare minimum
+        super(params);
+    }
+}
+
+
+//
+export class EntityComponentHitboxGeneric extends EntityComponent
 {
     // bare minimum
     #params = null;
+
+    // 0 : hurtbox (aka defending)
+    // 1 : hitbox (aka attacking)
+    #type = 0;
 
     //
     #sphere = null;
     #sphereRadius = 0.5;
     #sphereWorldPosition = null;
-    #spherePositionOffset = {x:0,y:-1.2,z:-0.8};
+    #spherePositionOffset = {x:0,y:0,z:0};
 
     #spherePositionAfterRotation = null;
 
     // construct
     constructor(params)
     {
+        console.log("["+params.type+"] params.type");
+
+        // base aka bare minimum
         super(params);
         this.#params = params;
 
         //
         this.#sphereWorldPosition = new THREE.Vector3();
-        this.#spherePositionOffset = this.#params.offsetPosition;
-        this.#sphereRadius = this.#params.radius;
+        this.#spherePositionAfterRotation = new THREE.Vector3(0,0,0);
 
         //
-        this.#spherePositionAfterRotation = new THREE.Vector3(0,0,0);
+        if(this.#params.type != null && this.#params.type != undefined)
+        {
+            console.log(this.#params.type);
+            this.#type = this.#params.type;
+        }
+        if(this.#params.offsetPosition != null && this.#params.offsetPosition != undefined)
+        {
+            this.#spherePositionOffset = this.#params.offsetPosition;
+        }
+        if(this.#params.radius != null && this.#params.radius != undefined)
+        {
+            this.#sphereRadius = this.#params.radius;
+        }
+
     }
 
     // getters
@@ -404,26 +483,27 @@ export class EntityComponentHitbox extends EntityComponent
 
     methodInitialize()
     {
+        console.log("["+this.methodGetName()+"] name ["+this.#type+"] type");
         //
         const geometry = new THREE.SphereGeometry(this.#sphereRadius,4,4);
-        const material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe: true, } );
+        const color = ((this.#type == 0) ? 0xffff00 : 0xff0000);
+        const material = new THREE.MeshBasicMaterial( { color: color, wireframe: true, } );
         this.#sphere = new THREE.Mesh( geometry, material );
         
-        //
-        console.log("["+ this.#params.isFixedToCamera +"] this.#params.isFixedToCamera | (parent: "+ this.methodGetName() +")");
-
         //
         if(this.#params.isFixedToCamera == true)
         {
             //
+            console.log("is indeed fixed to camera");
             this.#params.cameraPivot.add(this.#sphere);
         }
         else {
             //
+            console.log("not fixed to camera");
             this.#params.scene.add(this.#sphere);
         }
         //
-        this.methodMoveHitboxByOffset();
+        this.methodMoveSphereByOffset();
 
         //
         this.#spherePositionAfterRotation.copy(this.methodGetPosition());
@@ -433,6 +513,12 @@ export class EntityComponentHitbox extends EntityComponent
 
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
         this.methodRegisterInvokableHandler('update.rotations', (paramMessage) =>{ this.methodHandleUpdateRotations(paramMessage);});
+
+        //
+        if(this.#type == 0)
+        {
+            this.methodRegisterInvokableHandler('battleevent.takedamage', (paramMessage) =>{ this.methodHandleTakeDamage(paramMessage);});
+        }
     }
 
     methodUpdate(timeElapsed, timeDelta)
@@ -456,7 +542,7 @@ export class EntityComponentHitbox extends EntityComponent
             //this.#sphere.rotation.z = this.#params.cameraPivot.rotation.z;
             //this.#sphere.rotation.w = this.#params.cameraPivot.rotation.w;
             //
-            this.methodMoveHitboxByOffset();
+            this.methodMoveSphereByOffset();
         }
     }
 
@@ -468,7 +554,7 @@ export class EntityComponentHitbox extends EntityComponent
 
         this.#sphere.position.copy(paramMessage.invokableHandlerValue);
         //this.#sphere.position.copy(this.methodGetPosition());
-        this.methodMoveHitboxByOffset();
+        this.methodMoveSphereByOffset();
 
         // only if we have a camera do we do this
         // otherwise we should have an equivalent without the camera
@@ -507,6 +593,26 @@ export class EntityComponentHitbox extends EntityComponent
         //
         //this.methodRotateAroundCenter(theta);
         this.methodSetRotationAroundCenter();
+    }
+
+
+    methodHandleTakeDamage(paramMessage)
+    {
+        // signal to AI component instead
+        //this.#modeMoveAround = true;
+
+        //console.log("dmg!!!");
+        //console.log(paramMessage.invokableHandlerValue);
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+        pos.y += 0.1;
+        this.methodSetPosition(pos);
+        // reminder that setposition will also call the update position handler
+        // so we don't need to do that manually
+
+        // this updates our position
+        // but it doesn't update the hitboxmanager of the enemy
+        // so we're going to have to do that in the hitbox manager
     }
 
     // other
@@ -569,8 +675,11 @@ export class EntityComponentHitbox extends EntityComponent
 
         // update lines too?
     }
-    methodMoveHitboxByOffset()
+    methodMoveSphereByOffset()
     {
+        // early return: no offset
+        if(this.#spherePositionOffset == null || this.#spherePositionOffset == undefined){return;}
+
         //
         this.#sphere.position.x += this.#spherePositionOffset.x;
         this.#sphere.position.y += this.#spherePositionOffset.y;
@@ -584,7 +693,36 @@ export class EntityComponentHitbox extends EntityComponent
 }
 
 
+
 //
+export class EntityComponentHitbox extends EntityComponentHitboxGeneric
+{
+    // override construct
+    // to set type
+    constructor(params)
+    {
+        // override params
+        params.type = 1;
+        // base aka bare minimum
+        super(params);
+    }
+}
+export class EntityComponentHurtbox extends EntityComponentHitboxGeneric
+{
+    // override construct
+    // to set type
+    constructor(params)
+    {
+        // override params
+        params.type = 0;
+        // base aka bare minimum
+        super(params);
+    }
+}
+
+
+//
+/*
 export class EntityComponentHurtbox extends EntityComponent
 {
     // bare minimum
@@ -594,7 +732,8 @@ export class EntityComponentHurtbox extends EntityComponent
     #sphere = null;
     #sphereRadius = 0.5;
     #sphereWorldPosition = null;
-    #spherePositionOffset = {x:0,y:-1.2,z:-0.8};
+    #spherePositionOffset = {x:0,y:1,z:0};
+    #spherePositionAfterRotation = null;
 
     // testing
     #modeMoveAround = false;
@@ -605,6 +744,21 @@ export class EntityComponentHurtbox extends EntityComponent
         super(params);
         this.#params = params;
 
+        //
+        this.#sphereWorldPosition = new THREE.Vector3();
+        if(this.#params.offsetPosition != null && this.#params.offsetPosition != undefined)
+        {
+            this.#spherePositionOffset = this.#params.offsetPosition;
+        }
+        if(this.#params.radius != null && this.#params.radius != undefined)
+        {
+            this.#sphereRadius = this.#params.radius;
+        }
+
+        //
+        this.#spherePositionAfterRotation = new THREE.Vector3(0,0,0);
+
+        //
         this.#sphereWorldPosition = new THREE.Vector3();
     }
 
@@ -624,12 +778,13 @@ export class EntityComponentHurtbox extends EntityComponent
         const isPlayer = (componentInstanceHitbox == null ? false : true);
 
         //
-        const geometry = new THREE.SphereGeometry(0.5,4,4);
-        const material = new THREE.MeshBasicMaterial( { color: 0xffff00, wireframe: true, visible: !isPlayer, } );
+        const geometry = new THREE.SphereGeometry(this.#sphereRadius,4,4);
+        const material = new THREE.MeshBasicMaterial( { color: 0xffff00, wireframe: true, visible: true, } );
         this.#sphere = new THREE.Mesh( geometry, material );
-
         //
         this.#params.scene.add(this.#sphere);
+        //
+        this.methodMoveSphereByOffset();
 
         // register handlers
 
@@ -655,6 +810,8 @@ export class EntityComponentHurtbox extends EntityComponent
     {
         // base aka bare minimum
         this.#sphere.position.copy(paramMessage.invokableHandlerValue);
+        //
+        this.methodMoveSphereByOffset();
 
         //
         this.methodUpdateDistances();
@@ -680,6 +837,17 @@ export class EntityComponentHurtbox extends EntityComponent
 
     // other
 
+    methodMoveSphereByOffset()
+    {
+        // early return: no offset
+        if(this.#spherePositionOffset == null || this.#spherePositionOffset == undefined){return;}
+
+        //
+        this.#sphere.position.x += this.#spherePositionOffset.x;
+        this.#sphere.position.y += this.#spherePositionOffset.y;
+        this.#sphere.position.z += this.#spherePositionOffset.z;
+    }
+
     methodUpdateDistances()
     {
         // to do
@@ -703,10 +871,11 @@ export class EntityComponentHurtbox extends EntityComponent
             // we get the actual component inside the entity, not just the entity
             const componentHitboxManager = listEntitiesWithHitboxManagerComponent[i].methodGetComponent("EntityComponentHitboxManager");
             // early continue: no lines, so we don't need to update
-            if(componentHitboxManager.hasLines != true){continue;}
+            //if(componentHitboxManager.hasLines != true){continue;}
             // call the update
             componentHitboxManager.methodUpdatePositionLines(null);
         }
 
     }
 }
+*/

@@ -111,15 +111,15 @@ function init()
         entityA.methodAddComponent(new EntityComponentPlayerControllerInput());
         //
         entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
-        entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
-        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,countSpheres:2,
+        //entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,offsetPosition:{x:0,y:0,z:1,},}));
+        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,
+            countSpheres:2,
             offsetPositions:[
-                {x:-1.5,y:-0.8,z:-1.8},
-                {x:1.5,y:-0.8,z:-1.8},
+                {x:-1.5,y:-0.8,z:-1.8,},
+                {x:1.5,y:-0.8,z:-1.8,},
             ],
             radii:[0.5,0.5,],
         }));
-
         entityA.methodSetPosition(new THREE.Vector3(0.0,0.0,5.0));
         //
 
@@ -131,14 +131,14 @@ function init()
         entityB.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
         entityB.methodAddComponent(new EntityComponentHitboxList({scene: scene,countSpheres:1,
             offsetPositions:[
-                {x:0,y:-1.2,z:-0.8},
+                {x:0,y:1,z:1},
             ],
             radii:[0.5,],
         }));
 
         //
-        console.log("ask to init lines:");
-        entityA.methodGetComponent("EntityComponentHitboxManager").methodInitializeLines();
+        //console.log("ask to init lines:");
+        //entityA.methodGetComponent("EntityComponentHitboxManager").methodInitializeLines();
 
         //
         const entityC = new Entity(null);
