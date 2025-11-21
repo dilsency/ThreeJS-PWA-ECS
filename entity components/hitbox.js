@@ -85,6 +85,9 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodHandleUpdatePosition(paramMessage)
     {
+        // to do
+        // update the distances / lines of all components that have a hitbox manager
+
         //
         this.methodUpdatePositionLines(paramMessage);
     }
@@ -98,6 +101,9 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodInitializeLines()
     {
+        // this isn't ran anymore lmao
+        return;
+
         // this is called manually from main.js
         // this is because we actually need all objects to be initialized on the scene FIRST
         // before we can draw anything
@@ -209,6 +215,7 @@ export class EntityComponentHitboxManager extends EntityComponent
             points[1].copy(iteratorHitbox.spherePositionAfterRotation);
             // this is the part that doesn't want to work
             // : the enemy hurtbox
+            //points[0].copy(componentInstanceHurtbox.spherePositionAfterRotation);
             points[0].copy(componentInstanceHurtbox.spherePosition);
 
             // if we do not have a line here, init it
@@ -229,7 +236,25 @@ export class EntityComponentHitboxManager extends EntityComponent
             this.#lines[index].geometry.setFromPoints(points);
             this.#lines[index].geometry.computeBoundingSphere();
             // we also update the distances
-            this.#linesDistances[index] = (Math.abs(points[0].distanceTo(points[1])));
+            const dist = Math.abs(points[0].distanceTo(points[1]));
+            this.#linesDistances[index] = (dist);
+            // based on distance we change the color
+            //const distNormalize = Math.max(dist, 100.0) / 100.0;
+            const distNormalize = dist / 5.0;
+            //console.log(dist);
+            const col1 = new THREE.Color(0xFF0000);
+            const col2 = new THREE.Color(0x0000FF);
+
+            // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
+            
+            if(dist <= (iteratorHitbox.sphereRadius * 1.1 + componentInstanceHurtbox.sphereRadius * 1.1))
+            {
+                col1.setColorName("cyan");
+            }
+            else {
+                col1.lerp(col2, distNormalize);
+            }
+            this.#lines[index].material.color.set(col1.r, col1.g, col1.b);
             //
             index++;
         }
@@ -487,7 +512,7 @@ export class EntityComponentHitboxGeneric extends EntityComponent
         //
         const geometry = new THREE.SphereGeometry(this.#sphereRadius,4,4);
         const color = ((this.#type == 0) ? 0xffff00 : 0xff0000);
-        const material = new THREE.MeshBasicMaterial( { color: color, wireframe: true, } );
+        const material = new THREE.MeshBasicMaterial( { color: color, wireframe: true, side: THREE.DoubleSide, depthTest: false, } );
         this.#sphere = new THREE.Mesh( geometry, material );
         
         //
@@ -550,6 +575,10 @@ export class EntityComponentHitboxGeneric extends EntityComponent
 
     methodHandleUpdatePosition(paramMessage)
     {
+        // to do
+        // update the distances / lines of all components that have a hitbox manager
+
+        //
         if(this.#params.isFixedToCamera == true){return;}
 
         this.#sphere.position.copy(paramMessage.invokableHandlerValue);
@@ -561,6 +590,10 @@ export class EntityComponentHitboxGeneric extends EntityComponent
         if(this.#params.cameraPivot != null)
         {
             this.methodSetRotationAroundCenter();
+        }
+        else
+        {
+            this.methodSetRotationAroundCenterWithoutCamera();
         }
 
         // and then we rotate based on our current rotation?
@@ -592,12 +625,24 @@ export class EntityComponentHitboxGeneric extends EntityComponent
 
         //
         //this.methodRotateAroundCenter(theta);
-        this.methodSetRotationAroundCenter();
+        
+        // only if we have a camera do we do this
+        // otherwise we should have an equivalent without the camera
+        if(this.#params.cameraPivot != null)
+        {
+            this.methodSetRotationAroundCenter();
+        }
+        else
+        {
+            this.methodSetRotationAroundCenterWithoutCamera();
+        }
     }
 
 
     methodHandleTakeDamage(paramMessage)
     {
+        console.log(this.methodGetName() + " is hit!");
+
         // signal to AI component instead
         //this.#modeMoveAround = true;
 
@@ -675,6 +720,16 @@ export class EntityComponentHitboxGeneric extends EntityComponent
 
         // update lines too?
     }
+    methodSetRotationAroundCenterWithoutCamera()
+    {
+        // ahh it was our order of operation that was whack
+        // perhaps it triggered another .update, perhaps the data just got all whack
+        // if we separate them nicely like this we won't have an issue
+        this.#spherePositionAfterRotation.copy(this.methodGetPosition());
+        this.#spherePositionAfterRotation.add(this.#spherePositionOffset);
+    }
+
+
     methodMoveSphereByOffset()
     {
         // early return: no offset

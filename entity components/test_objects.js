@@ -119,3 +119,39 @@ export class EntityComponentButtonPointerLock extends EntityComponent
         return !res;
     }
 }
+
+//
+export class EntityComponentAIEnemy extends EntityComponent
+{
+    // bare minimum
+    #params = null;
+
+    //
+    #isEnabled = false;
+
+    // construct
+    constructor(params)
+    {
+        super(params);
+        this.#params = params;
+
+        //
+        this.#isEnabled = params.isEnabled;
+    }
+
+    // lifecycle
+
+    methodInitialize(){}
+
+    methodUpdate(timeElapsed, timeDelta)
+    {
+        // early return: not enabled
+        if(this.#isEnabled != true){return;}
+
+        //
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+        pos.x += Math.sin(timeElapsed * 5) * 0.1;
+        this.methodSetPosition(pos);
+    }
+}

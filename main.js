@@ -10,7 +10,7 @@ import {EntityComponentCameraControllerFirstPerson} from "camera";
 import {EntityComponentCameraControllerFirstPersonInput} from "camera";
 import {EntityComponentPlayerController} from "player";
 import {EntityComponentPlayerControllerInput} from "player";
-import {EntityComponentTestCube} from "./entity components/test_objects.js";
+import {EntityComponentAIEnemy, EntityComponentTestCube} from "./entity components/test_objects.js";
 import {EntityComponentButtonPointerLock} from "./entity components/test_objects.js";
 import { EntityComponentHitboxManager } from "./entity components/hitbox.js";
 import { EntityComponentHitboxList } from "./entity components/hitbox.js";
@@ -111,7 +111,10 @@ function init()
         entityA.methodAddComponent(new EntityComponentPlayerControllerInput());
         //
         entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
-        //entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,offsetPosition:{x:0,y:0,z:1,},}));
+
+        entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,
+            offsetPosition:{x:0,y:-0.5,z:0,},
+        }));
         entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,
             countSpheres:2,
             offsetPositions:[
@@ -135,6 +138,7 @@ function init()
             ],
             radii:[0.5,],
         }));
+        entityB.methodAddComponent(new EntityComponentAIEnemy({scene: scene,isEnabled:true,}));
 
         //
         //console.log("ask to init lines:");
