@@ -10,7 +10,7 @@ import {EntityComponentCameraControllerFirstPerson} from "camera";
 import {EntityComponentCameraControllerFirstPersonInput} from "camera";
 import {EntityComponentPlayerController} from "player";
 import {EntityComponentPlayerControllerInput} from "player";
-import {EntityComponentAIEnemy, EntityComponentTestCube} from "./entity components/test_objects.js";
+import {EntityComponentAIEnemy, EntityComponentButtonCouldToDo, EntityComponentTestCube} from "./entity components/test_objects.js";
 import {EntityComponentButtonPointerLock} from "./entity components/test_objects.js";
 import { EntityComponentHitboxManager } from "./entity components/hitbox.js";
 import { EntityComponentHitboxList } from "./entity components/hitbox.js";
@@ -148,6 +148,7 @@ function init()
         const entityC = new Entity(null);
         entityManager.methodAddEntity(entityC);
         entityC.methodAddComponent(new EntityComponentButtonPointerLock({document:document,renderer:renderer,}));
+        entityC.methodAddComponent(new EntityComponentButtonCouldToDo({document:document,renderer:renderer,}));
     }
 
     //

@@ -76,8 +76,11 @@ export class EntityComponentButtonPointerLock extends EntityComponent
         this.#elementButton = this.#params.document.createElement("button");
         this.#elementButton.innerText = "PointerLock";
         this.#elementButton.style.position = "fixed";
-        this.#elementButton.style.top = "0";
-        this.#elementButton.style.left = "0";
+        this.#elementButton.style.bottom = "0";
+        this.#elementButton.style.left = "calc(50% - 45px)";
+        this.#elementButton.style.right = "calc(50% - 45px)";
+        this.#elementButton.style.width = "90px";
+        this.#elementButton.style.fontSize = "11px";
         this.#elementButton.addEventListener("click", ((e) => this.methodOnClickButton(e)));
         this.#params.document.body.appendChild(this.#elementButton);
     }
@@ -121,6 +124,94 @@ export class EntityComponentButtonPointerLock extends EntityComponent
 }
 
 //
+export class EntityComponentButtonCouldToDo extends EntityComponent
+{
+
+    // bare minimum
+    #params = null;
+
+    //
+    #elementUnorderedList = null;
+    #elementButton = null;
+    #stateToggle = false;
+
+    // construct
+    constructor(params)
+    {
+        super(params);
+        this.#params = params;
+    }
+
+     // lifecycle
+
+    methodInitialize()
+    {
+        //
+        this.#elementButton = this.#params.document.createElement("button");
+        this.#elementButton.innerText = "things that we Could do";
+        this.#elementButton.style.position = "fixed";
+        this.#elementButton.style.top = "0";
+        this.#elementButton.style.left = "0";
+        this.#elementButton.style.fontSize = "11px";
+        this.#elementButton.addEventListener("click", ((e) => this.methodOnClickButton(e)));
+        this.#params.document.body.appendChild(this.#elementButton);
+
+        //
+        this.#elementUnorderedList = this.#params.document.createElement("ul");
+
+        this.#elementUnorderedList.style.display = "none";
+        this.#elementUnorderedList.style.position = "fixed";
+        this.#elementUnorderedList.style.top = "20px";
+        this.#elementUnorderedList.style.left = "0";
+
+        this.#elementUnorderedList.style.color = "#FFFFFF";
+        this.#elementUnorderedList.style.maxWidth = "200px";
+        this.#elementUnorderedList.style.fontSize = "11px";
+        this.#elementUnorderedList.style.userSelect = "none";
+        this.#elementUnorderedList.style.marginLeft = "15px";
+        this.#elementUnorderedList.style.paddingLeft = "0";
+
+        this.#params.document.body.appendChild(this.#elementUnorderedList);
+
+        // https://math.stackexchange.com/questions/3539667/closest-point-on-a-cylinder-from-a-point
+        const li1 = this.#params.document.createElement("li");
+        li1.innerText = "still use spheres only for hitbox detection. BUT. we could also check inbetween the spheres, with a crude 'cylinder-like' approach. \n we could search in the Explorer for cylinder/capsule, I think we've done that before...";
+        this.#elementUnorderedList.appendChild(li1);
+
+        //
+        const li2 = this.#params.document.createElement("li");
+        li2.innerText = "in that case though... we would need a ListList class, that contains the now List class. \n this is so that we can have separate hitboxes that are also NOT part of a chain like that.";
+        this.#elementUnorderedList.appendChild(li2);
+
+        //
+        const li3 = this.#params.document.createElement("li");
+        li3.innerText = "change so that we check all hitbox handlers whenever a hitbox updates. \n currently we only check ourselves, and update our own lines, when we should update other entities' lines as well.";
+        this.#elementUnorderedList.appendChild(li3);
+    }
+
+    methodUpdate(timeElapsed, timeDelta)
+    {
+    }
+
+    //
+
+    async methodOnClickButton(e)
+    {
+        if(this.#stateToggle == true)
+        {
+            this.#stateToggle = false;
+            //this.#elementButton.style.display = "block";
+            this.#elementUnorderedList.style.display = "none";
+        }
+        else {
+            this.#stateToggle = true;
+            //this.#elementButton.style.display = "none";
+            this.#elementUnorderedList.style.display = "block";
+        }
+    }
+}
+
+//
 export class EntityComponentAIEnemy extends EntityComponent
 {
     // bare minimum
@@ -151,7 +242,15 @@ export class EntityComponentAIEnemy extends EntityComponent
         //
         const pos = new THREE.Vector3();
         pos.copy(this.methodGetPosition());
-        pos.x += Math.sin(timeElapsed * 5) * 0.1;
+
+        //
+        const clamp = 0.01;
+        var displacement = Math.sin(timeElapsed * 1) * 1.0;
+        if(displacement > clamp){displacement = clamp;}
+        else if (displacement < -clamp){displacement = -clamp;}
+
+        //
+        pos.x += displacement;
         this.methodSetPosition(pos);
     }
 }

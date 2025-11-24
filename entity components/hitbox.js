@@ -47,6 +47,7 @@ export class EntityComponentHitboxManager extends EntityComponent
 
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
         this.methodRegisterInvokableHandler('update.rotations', (paramMessage) =>{ this.methodHandleUpdateRotations(paramMessage);});
+        this.methodRegisterInvokableHandler('update.distances', (paramMessage) =>{ this.methodHandleUpdateDistances(paramMessage);});
     }
 
     methodUpdate(timeElapsed, timeDelta)
@@ -89,11 +90,33 @@ export class EntityComponentHitboxManager extends EntityComponent
         // update the distances / lines of all components that have a hitbox manager
 
         //
-        this.methodUpdatePositionLines(paramMessage);
+
+                // dilstest test
+                // disable update lines for now
+                // we should instead call for all entities with a hitbox manager
+                // and do that in a loop there
+                //
+                // I mean why not make that a message, then? and subscribe to it in the hitbox manager?
+                // or wait, that wouldn't go out to all entities... would it?
+        //this.methodUpdatePositionLines(paramMessage);
+                this.methodUpdateDistancesForAllHitboxManagers(paramMessage);
     }
     methodHandleUpdateRotations(paramMessage)
     {
         //
+        // dilstest test
+        // disable update lines for now
+        // we should instead call for all entities with a hitbox manager
+        // and do that in a loop there
+        //
+        // I mean why not make that a message, then? and subscribe to it in the hitbox manager?
+        // or wait, that wouldn't go out to all entities... would it?
+        //this.methodUpdatePositionLines(paramMessage);
+        this.methodUpdateDistancesForAllHitboxManagers(paramMessage);
+    }
+
+    methodHandleUpdateDistances(paramMessage)
+    {
         this.methodUpdatePositionLines(paramMessage);
     }
 
@@ -301,7 +324,20 @@ export class EntityComponentHitboxManager extends EntityComponent
                 // hurtbox.js has no reference to this here hitbox manager
                 // and it would be unreasonable to expect it to have that
                 // so we do run it ourselves
-                this.methodUpdatePositionLines(null);
+
+
+                // dilstest test
+                // disable update lines for now
+                // we should instead call for all entities with a hitbox manager
+                // and do that in a loop there
+                //
+                // I mean why not make that a message, then? and subscribe to it in the hitbox manager?
+                // or wait, that wouldn't go out to all entities... would it?
+                //this.methodUpdatePositionLines(null);
+                this.methodUpdateDistancesForAllHitboxManagers(null);
+                
+                
+                
                 // the alternative would be to update every frame
                 // which we might have to do anyway lmao
                 // since we currently don't account for the enemy moving on their own
@@ -346,6 +382,37 @@ export class EntityComponentHitboxManager extends EntityComponent
             }
             index = 0;
             return false;
+    }
+
+    //
+
+    methodUpdateDistancesForAllHitboxManagers(paramMessage)
+    {
+        // first we get a list of all entities that have hitbox managers
+        
+        // we either exclude ourselves from getting ourselves
+        // in which case we need to do our own update manually
+        // or we let ourselves put ourselves in that list
+        // which we do in this case
+
+        //
+        const listEntitiesWithHitboxManagerComponent = this.methodGetEntitiesWithComponent("EntityComponentHitboxManager");
+        // early return
+        if(listEntitiesWithHitboxManagerComponent == null || listEntitiesWithHitboxManagerComponent == undefined || listEntitiesWithHitboxManagerComponent.length <= 0){return;}
+
+        // we alter our paramMessage
+        // first we can check if it is null (it can be)
+        if(paramMessage == null){paramMessage = {};}
+        paramMessage.invokableHandlerName = "update.distances";
+        // reminder: ... is the spread operator, spreads out the contents into it, does not create a second level/tier
+        paramMessage.invokableHandlerValue = {...paramMessage.invokableHandlerValue, test: "test",};
+
+        // loop through them all and give them a message
+        for(var i = 0; i < listEntitiesWithHitboxManagerComponent.length; i++)
+        {
+            //
+            listEntitiesWithHitboxManagerComponent[i].methodBroadcastMessage(paramMessage);
+        }
     }
 }
 
