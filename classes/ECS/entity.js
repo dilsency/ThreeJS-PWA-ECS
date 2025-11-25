@@ -191,7 +191,7 @@ export class Entity
     methodRegisterInvokableHandler(paramInvokableHandlerName, paramInvokableHandlerValue)
     {
         //console.log("register invokable handler!");
-        console.log(paramInvokableHandlerName);
+        console.log("register " + paramInvokableHandlerName);
 
         // if we do not have an array at that index
         // we need to create it

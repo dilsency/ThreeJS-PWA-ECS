@@ -201,6 +201,7 @@ function init()
                     [1.0,],
                 ],
         }));
+        entityD.methodAddComponent(new EntityComponentGravity({scene: scene,isEnabled:true,}));
     }
 
     //

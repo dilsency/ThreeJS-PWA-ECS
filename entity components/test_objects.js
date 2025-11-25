@@ -300,13 +300,13 @@ export class EntityComponentGravity extends EntityComponent
         pos.copy(this.methodGetPosition());
 
         //
-        if(pos.y > 0)
+        if(pos.y >= 0)
         {
             this.#velocity.y -= 0.001;
         }
         if(pos.y < 0)
         {
-            this.#velocity.y += 0.001;
+            this.#velocity.y *= -0.9;
         }
     }
     #methodApplyVelocity()
@@ -324,6 +324,6 @@ export class EntityComponentGravity extends EntityComponent
 
     methodHandleTakeDamage(paramMessage)
     {
-        this.#velocity.y += 0.01;
+        this.#velocity.y += 0.001;
     }
 }

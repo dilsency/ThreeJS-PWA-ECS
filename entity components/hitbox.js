@@ -126,6 +126,14 @@ export class EntityComponentHitboxManager extends EntityComponent
     {
         const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox, index);
         this.#linesDistances[index] = (dist);
+        if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
+        {
+            // we broadcast that we intersect, to the hurtbox
+            componentHurtbox.methodBroadcastMessage({
+                invokableHandlerName: 'battleevent.takedamage',
+                invokableHandlerValue: 0.1,
+            });
+        }
         const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, index, dist);
     }
     methodGetDistanceSphere(componentHitbox, componentHurtbox, index)
