@@ -14,6 +14,8 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     //
     #isEnabled = null;
+    // test only
+    #isTestDisableInUpdateLoop = true;
 
     // testing
     #hasInitializedLines = false;
@@ -58,6 +60,8 @@ export class EntityComponentHitboxManager extends EntityComponent
     {
         // early return: is not enabled
         if(this.#isEnabled != true){return;}
+        // early return: test by disable update in loop
+        if(this.#isTestDisableInUpdateLoop == true){return;}
 
         // sphere aka hithurtbox aka both hitboxes and hurtboxes
         this.methodUpdateSphere(timeDelta);
@@ -138,6 +142,9 @@ export class EntityComponentHitboxManager extends EntityComponent
             // (since we ourselves are the attacker, we don't need to store our own name)
             // and then inside that can we have the other array, or multiple
 
+
+            
+            //
             const points = [
                 new THREE.Vector3(0,0,0),
                 new THREE.Vector3(0,0,0),
@@ -158,24 +165,28 @@ export class EntityComponentHitboxManager extends EntityComponent
 
             this.#lines[index].geometry.setFromPoints(points);
             this.#lines[index].geometry.computeBoundingSphere();
-            // we also update the distances
-            //const dist = Math.abs(points[0].distanceTo(points[1]));
             
             // based on distance we change the color
-            //const distNormalize = Math.max(dist, 100.0) / 100.0;
-            const distNormalize = dist / 5.0;
-            //console.log(dist);
             const col1 = new THREE.Color(0xFF0000);
             const col2 = new THREE.Color(0x0000FF);
+            const col3 = new THREE.Color(0xFFFF00);
 
             // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
             
-            if(dist <= (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1))
+            const maxdist1 = (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1);
+            const maxdist2 = (componentHitbox.sphereRadius * 4.1 + componentHurtbox.sphereRadius * 4.1);
+
+            if(dist <= maxdist1)
             {
                 col1.setColorName("cyan");
             }
+            else if(dist <= maxdist2)
+            {
+                col3.lerp(col1, dist / maxdist2);
+                col1.copy(col3);
+            }
             else {
-                col1.lerp(col2, distNormalize);
+                col1.lerp(col2, ((dist - maxdist2) / maxdist2));
             }
             this.#lines[index].material.color.set(col1.r, col1.g, col1.b);
             //
