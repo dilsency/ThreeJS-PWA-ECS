@@ -69,6 +69,18 @@ export class EntityManager
         }
         return result;
     }
+    methodGetEntitiesWithComponentAndSuffix(paramComponentName, paramComponentNameSuffix, paramEntityNameToExclude)
+    {
+        const result = [];
+        for(const iteratorEntity of this.#entities)
+        {
+            const a = iteratorEntity.methodGetComponentWithSuffix(paramComponentName, paramComponentNameSuffix);
+            if(a == null || a == undefined){continue;}
+            if(iteratorEntity.methodGetName() == paramEntityNameToExclude){continue;}
+            result.push(iteratorEntity);
+        }
+        return result;
+    }
 
     // lifecycle
 

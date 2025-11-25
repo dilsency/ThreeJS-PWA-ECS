@@ -254,3 +254,76 @@ export class EntityComponentAIEnemy extends EntityComponent
         this.methodSetPosition(pos);
     }
 }
+
+//
+export class EntityComponentGravity extends EntityComponent
+{
+    // bare minimum
+    #params = null;
+
+    //
+    #velocity = null;
+    #isEnabled = false;
+
+    // construct
+    constructor(params)
+    {
+        super(params);
+        this.#params = params;
+
+        //
+        this.#velocity = new THREE.Vector3(0,0.05,0);
+        this.#isEnabled = params.isEnabled;
+    }
+
+    // lifecycle
+
+    methodInitialize()
+    {
+        this.methodRegisterInvokableHandler('battleevent.takedamage', (paramMessage) =>{ this.methodHandleTakeDamage(paramMessage);});
+    }
+
+    methodUpdate(timeElapsed, timeDelta)
+    {
+        // early return: not enabled
+        if(this.#isEnabled != true){return;}
+
+        //
+        this.#methodIncreaseVelocity();
+        this.#methodApplyVelocity();
+    }
+
+    #methodIncreaseVelocity()
+    {
+        //
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+
+        //
+        if(pos.y > 0)
+        {
+            this.#velocity.y -= 0.001;
+        }
+        if(pos.y < 0)
+        {
+            this.#velocity.y += 0.001;
+        }
+    }
+    #methodApplyVelocity()
+    {
+        //
+        const pos = new THREE.Vector3();
+        pos.copy(this.methodGetPosition());
+
+        //
+        pos.y += this.#velocity.y;
+        this.methodSetPosition(pos);
+    }
+
+    // handlers
+
+    methodHandleTakeDamage(paramMessage)
+    {
+        this.#velocity.y += 0.01;
+    }
+}

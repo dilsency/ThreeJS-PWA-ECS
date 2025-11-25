@@ -69,9 +69,47 @@ export class Entity
     {
         return this.#parent.methodGetEntitiesWithComponent(paramComponentName, paramEntityNameToExclude);
     }
+    methodGetEntitiesWithComponentAndSuffix(paramComponentName, paramComponentNameSuffix, paramEntityNameToExclude)
+    {
+        return this.#parent.methodGetEntitiesWithComponentAndSuffix(paramComponentName, paramComponentNameSuffix, paramEntityNameToExclude);
+    }
     methodGetComponent(paramComponentName)
     {
+        // we COULD assume the component could have a suffix
+        if(paramComponentName.includes("__"))
+        {
+            const split = nameExcludingSuffix.split("__");
+            return this.methodGetComponentsWithSuffix(split[0], split[1]);
+        }
+
+        // this is the normal one
         return this.#components[paramComponentName];
+    }
+    methodGetComponentWithSuffix(paramComponentName, paramComponentNameSuffix)
+    {
+        // here we return specifically that component
+        return this.#components[paramComponentName + "__" + paramComponentNameSuffix];
+    }
+    methodGetComponentsWithSuffix(paramComponentName, paramComponentNameSuffix)
+    {
+        // here we need to loop through all components that match
+        // and return a list
+        // EXCLUDING suffix
+        var nameExcludingSuffix = paramComponentName;
+        if(nameExcludingSuffix.includes("__"))
+        {
+            nameExcludingSuffix = nameExcludingSuffix.split("__")[0];
+        }
+        const res = [];
+        // javascript version of foreach loop
+        for(const iterator of this.#components)
+        {
+            if(iterator == nameExcludingSuffix)
+            {
+                res.push(iterator);
+            }
+        }
+        return res;
     }
     methodGetParent(){return this.#parent;}
     methodGetName(){return this.#name;}
@@ -126,10 +164,25 @@ export class Entity
 
         // then we add it at the correct index
         // note that we can only have 1 component instance of each component class this way...
-        // ...which seems to be fine
+        // ...which seems to be fine ?
+        // we make new components that are lists of other components, instead
+        // semi-clunky, but easier with searches and such
         this.#components[paramComponent.constructor.name] = paramComponent;
 
         // then we can initialize the component
+        paramComponent.methodInitialize();
+    }
+    methodAddComponentWithSuffix(paramComponent, paramComponentNameSuffix)
+    {
+        // in case we do want multiples of each
+        // BUT
+        // this will completely break methodGetComponent and methodGetEntitiesWithComponent
+        // they will need to take this suffix into account
+
+        // oh well
+
+        paramComponent.methodSetParent(this);
+        this.#components[paramComponent.constructor.name + "__" + paramComponentSuffix] = paramComponent;
         paramComponent.methodInitialize();
     }
 

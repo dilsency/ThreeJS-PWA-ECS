@@ -10,9 +10,9 @@ import {EntityComponentCameraControllerFirstPerson} from "camera";
 import {EntityComponentCameraControllerFirstPersonInput} from "camera";
 import {EntityComponentPlayerController} from "player";
 import {EntityComponentPlayerControllerInput} from "player";
-import {EntityComponentAIEnemy, EntityComponentButtonCouldToDo, EntityComponentTestCube} from "./entity components/test_objects.js";
+import {EntityComponentAIEnemy, EntityComponentButtonCouldToDo, EntityComponentGravity, EntityComponentTestCube} from "./entity components/test_objects.js";
 import {EntityComponentButtonPointerLock} from "./entity components/test_objects.js";
-import { EntityComponentHitboxManager } from "./entity components/hitbox.js";
+import { EntityComponentHitboxListList, EntityComponentHitboxManager, EntityComponentHurtboxListList } from "./entity components/hitbox.js";
 import { EntityComponentHitboxList } from "./entity components/hitbox.js";
 import { EntityComponentHitbox } from "./entity components/hitbox.js";
 import { EntityComponentHurtbox } from "./entity components/hitbox.js";
@@ -112,16 +112,35 @@ function init()
         //
         entityA.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: true,}));
 
-        entityA.methodAddComponent(new EntityComponentHurtbox({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,
-            offsetPosition:{x:0,y:-0.5,z:0,},
+        entityA.methodAddComponent(new EntityComponentHurtboxListList(
+            {
+                scene:scene,
+                cameraPivot:cameraPivot,
+                camera:camera,
+                twoDimSphereCount:[
+                    [1,],
+                ],
+                twoDimPositionOffset:[
+                    [{x:0,y:-1,z:-1},],
+                ],
+                twoDimArraySpheresRadius:[
+                    [0.2,],
+                ],
         }));
-        entityA.methodAddComponent(new EntityComponentHitboxList({scene: scene,cameraPivot:cameraPivot,camera:camera,isFixedToCamera:false,
-            countSpheres:2,
-            offsetPositions:[
-                {x:-1.5,y:-0.8,z:-1.8,},
-                {x:1.5,y:-0.8,z:-1.8,},
-            ],
-            radii:[0.5,0.5,],
+        entityA.methodAddComponent(new EntityComponentHitboxListList(
+            {
+                scene:scene,
+                cameraPivot:cameraPivot,
+                camera:camera,
+                twoDimSphereCount:[
+                    [2,],
+                ],
+                twoDimPositionOffset:[
+                    [{x:-0.5,y:-1,z:-1},{x:0.5,y:-1,z:-1},],
+                ],
+                twoDimArraySpheresRadius:[
+                    [0.2,0.2,],
+                ],
         }));
         entityA.methodSetPosition(new THREE.Vector3(0.0,0.0,5.0));
         //
@@ -131,24 +150,57 @@ function init()
         entityManager.methodAddEntity(entityB);
         entityB.methodAddComponent(new EntityComponentTestCube({scene:scene,name:"model",}));
         entityB.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: false,}));
-        entityB.methodAddComponent(new EntityComponentHurtbox({scene: scene,}));
-        entityB.methodAddComponent(new EntityComponentHitboxList({scene: scene,countSpheres:1,
-            offsetPositions:[
-                {x:0,y:1,z:1},
-            ],
-            radii:[0.5,],
+        entityB.methodAddComponent(new EntityComponentHurtboxListList(
+            {
+                scene:scene,
+                twoDimSphereCount:[
+                    [1,],
+                ],
+                twoDimPositionOffset:[
+                    [{x:0,y:0,z:0},],
+                ],
+                twoDimArraySpheresRadius:[
+                    [0.2,],
+                ],
+        }));
+        entityB.methodAddComponent(new EntityComponentHitboxListList(
+            {
+                scene:scene,
+                twoDimSphereCount:[
+                    [1,],
+                ],
+                twoDimPositionOffset:[
+                    [{x:0,y:-1,z:-1},],
+                ],
+                twoDimArraySpheresRadius:[
+                    [0.2,],
+                ],
         }));
         entityB.methodAddComponent(new EntityComponentAIEnemy({scene: scene,isEnabled:true,}));
-
-        //
-        //console.log("ask to init lines:");
-        //entityA.methodGetComponent("EntityComponentHitboxManager").methodInitializeLines();
+        entityB.methodAddComponent(new EntityComponentGravity({scene: scene,isEnabled:true,}));
 
         //
         const entityC = new Entity(null);
         entityManager.methodAddEntity(entityC);
         entityC.methodAddComponent(new EntityComponentButtonPointerLock({document:document,renderer:renderer,}));
         entityC.methodAddComponent(new EntityComponentButtonCouldToDo({document:document,renderer:renderer,}));
+
+        const entityD = new Entity(null);
+        entityManager.methodAddEntity(entityD);
+        entityD.methodAddComponent(new EntityComponentHitboxManager({scene: scene,isEnabled: false,}));
+        entityD.methodAddComponent(new EntityComponentHurtboxListList(
+            {
+                scene:scene,
+                twoDimSphereCount:[
+                    [1,],
+                ],
+                twoDimPositionOffset:[
+                    [{x:-10,y:0,z:-10},],
+                ],
+                twoDimArraySpheresRadius:[
+                    [1.0,],
+                ],
+        }));
     }
 
     //
