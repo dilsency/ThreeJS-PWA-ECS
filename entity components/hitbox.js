@@ -87,10 +87,8 @@ export class EntityComponentHitboxManager extends EntityComponent
         // BUT that is harder to read, actually
         var index = 0;
 
-
         // let's start with ourselves, and our attacking hitboxes
-
-        const l1 = this.methodGetComponent("EntityComponentHitboxListList");
+        const l1 = this.methodGetComponent("EntityComponentHitboxListList");if(l1 == null){return;}
         for(const i1 of l1.twoDimArraySpheres)
         {
             for(const i2 of i1.arraySpheres)
@@ -123,6 +121,7 @@ export class EntityComponentHitboxManager extends EntityComponent
     methodUpdateSphere2(componentHitbox, componentHurtbox, index)
     {
         const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox, index);
+        this.#linesDistances[index] = (dist);
         const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, index, dist);
     }
     methodGetDistanceSphere(componentHitbox, componentHurtbox, index)
@@ -161,7 +160,7 @@ export class EntityComponentHitboxManager extends EntityComponent
             this.#lines[index].geometry.computeBoundingSphere();
             // we also update the distances
             //const dist = Math.abs(points[0].distanceTo(points[1]));
-            this.#linesDistances[index] = (dist);
+            
             // based on distance we change the color
             //const distNormalize = Math.max(dist, 100.0) / 100.0;
             const distNormalize = dist / 5.0;
@@ -193,96 +192,6 @@ export class EntityComponentHitboxManager extends EntityComponent
         this.#linesDistances[index] = 0;//Math.abs(points[0].distanceTo(points[1]));
         //
         this.#params.scene.add(line);
-    }
-
-
-    methodUpdateSphereOLD()
-    {
-        // we only need to get our own component once (it doesn't depend on the loop)
-        // ...or does it, these days
-        const componentInstanceHitboxListList = this.methodGetComponent("EntityComponentHitboxListList");
-        // early return
-        if(componentInstanceHitboxListList == null || componentInstanceHitboxListList == undefined){return;}
-
-        // get all entities that have hurtboxes, excluding ourselves
-        const listListEntities = this.methodGetEntitiesWithComponent("EntityComponentHurtboxListList", this.methodGetName());
-        // early return
-        if(listListEntities == null || listListEntities == undefined || listListEntities.length <= 0){return;}
-
-        // foreach-loop through all entities that have hurtboxes
-        for(const iteratorEntity of listListEntities)
-        {
-            // we now have an entity that have hurtboxes
-
-            // we extract that component
-            const componentInstanceListListHurtbox = iteratorEntity.methodGetComponent("EntityComponentHurtboxListList");
-
-            // early continue if it nulled out
-            if(componentInstanceListListHurtbox == null || componentInstanceListListHurtbox == undefined){continue;}
-
-            // for readability, we can do the next step in another function
-
-            // we do the next step in another function for readability
-            const res = this.methodUpdateSphere2(listListEntities, iteratorEntity, componentInstanceHitboxListList, componentInstanceListListHurtbox);
-        }
-    }
-    methodUpdateSphere2OLD(listListEntities, iteratorEntity, componentInstanceHitboxListList, componentInstanceListListHurtbox)
-    {
-        // we are one iteration deep
-
-        // this.[...] refers to our attacker here
-        // iteratorEntity.[...] refers to the defender, which will be multiple
-
-        //
-
-        // what we have is the list list
-
-        // so we loop through it
-
-        // perhaps not needed
-        // otherwise an early return to prevent breakage
-        //if(!this.methodIsIterable(componentInstanceListListHurtbox.twoDimArraySpheres)){console.log(componentInstanceListListHurtbox.twoDimArraySpheres);return;}
-
-        for(const iterator of componentInstanceListListHurtbox.twoDimArraySpheres)
-        {
-            // test only early continue
-            if(this.methodGetName() !== "entityName1" || iteratorEntity.methodGetName() !== "entityName2"){continue;}
-            
-            // do next step in another function for readability
-            //console.log(iterator);
-            this.methodUpdateSphere3(iterator.arraySpheres);
-        }
-
-        return;
-        /*
-        // foreach-loop through them all and compare sphere distances
-        for(const iteratorEntity of iteratorListEntity)
-        {
-            console.log(iteratorEntity);
-            continue;
-            // first the comparison
-            // here we need to get the actual sphere data
-            // in our own hitbox(es) and the iteratorEntity 's hurtbox
-            const componentInstanceListHurtbox = iteratorListEntity.methodGetComponent("EntityComponentHurtbox");
-            if(componentInstanceListHurtbox == null || componentInstanceListHurtbox == undefined){continue;}
-            // compare distances
-
-            // we do the next step in another function for readability
-            const res = this.methodUpdateHitboxIteration(listListEntities, iteratorListEntity, componentInstanceHitboxListList, componentInstanceListHurtbox);
-        }
-        */
-    }
-    methodUpdateSphere3OLD(arrayComponent)
-    {
-        // we are two iterations deep
-        // believe it or not, we can still loop
-        console.log(arrayComponent);
-
-        // we loop through
-        for(const iterator of arrayComponent)
-        {
-            console.log(iterator);
-        }
     }
 
     // handlers
@@ -320,6 +229,7 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodHandleUpdateDistances(paramMessage)
     {
+        this.methodUpdateSphere(this.#timeDeltaCounterMax);
         return;
         this.methodUpdatePositionLines(paramMessage);
     }
