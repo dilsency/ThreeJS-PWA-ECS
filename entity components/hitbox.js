@@ -26,8 +26,8 @@ export class EntityComponentHitboxManager extends EntityComponent
     #hasRanOnce = false;
 
     //
-    #timeDeltaCounter = 1 / 2;
-    #timeDeltaCounterMax = 1 / 2;
+    #timeDeltaCounter = 100;//1 / 2;//1 / 60;
+    #timeDeltaCounterMax = 100;//1 / 2;//1 / 60;
 
     // construct
     constructor(params)
@@ -85,23 +85,96 @@ export class EntityComponentHitboxManager extends EntityComponent
         // that's so much!!!
 
 
+        // 
+        const thisName = this.methodGetName();
+
+
+
         // our index variable
         // keeps track of which line we are on
-        // we could technically use normal for loops and just use our iteratorIndex
+        // we could technically use normal for-loops and just use our iteratorIndex
         // BUT that is harder to read, actually
         var index = 0;
 
-        // let's start with ourselves, and our attacking hitboxes
+        // also we should use nameOfHurtbox as an index-key instead, but y'know
+
+        // we can get enemy entities early? I think?
+        // and in the worst case update this varible later.
+        var e1 = this.methodGetEntitiesWithComponent("EntityComponentHurtboxListList", this.methodGetName());if(e1 == null){return;}
+
+        // we first and foremost check distances on an entity level ?
+        // how would we do that...
+        // return early...
+        // ...or set a boolean in an array for later?
+        const currentHitboxPos = this.methodGetPosition();
+        const entityDistances = [];
+        const entityDistancesBool = [];
+        var isAnyNear = false;
+
+        const maxDist = 5;
+
+        //
+        for(const j1_2 of e1)
+        {
+            const jteratorName = j1_2.methodGetName();
+            const name_2 = thisName + " -> " + jteratorName;
+            const pos_2 = j1_2.methodGetPosition();
+            const dist_2 = currentHitboxPos.distanceTo(pos_2);
+
+            // we can't do a simple return here
+            // this is because it will mess it up for other hitboxes as well
+            // that have nothing to do with us
+
+            // ...that really shouldn't happen though, but it sure seems to
+            
+            // our more complex index-key that goes by nameOfHurtbox...
+            // ...may have to include a boolean as well
+            entityDistances[name_2] = dist_2;
+            if(dist_2 > maxDist)
+            {
+                entityDistancesBool[name_2] = false;
+                //return;
+            }
+            else {
+                entityDistancesBool[name_2] = true;
+                isAnyNear = true;
+            }
+        }
+
+        // early return: none are nearby
+        if(!isAnyNear)
+        {
+            // at this point we should delete all lines associated with the current attacking hitbox (this.)
+            // but since we stored them with indeces only we are f'd
+            return;
+        }
+
+        // we start the loop with ourselves' attacking hitboxes
         const l1 = this.methodGetComponent("EntityComponentHitboxListList");if(l1 == null){return;}
         for(const i1 of l1.twoDimArraySpheres)
         {
             for(const i2 of i1.arraySpheres)
             {
                 // we have finished looping over attacking hitboxes
+
+                // we get e1 once earlier, outside of the loop, instead
+                // I don't THINK we need to update it here each loop?
+                //e1 = this.methodGetEntitiesWithComponent("EntityComponentHurtboxListList", this.methodGetName());if(e1 == null){continue;}
+
                 // now we START looping over defending hurtboxes
-                const e1 = this.methodGetEntitiesWithComponent("EntityComponentHurtboxListList", this.methodGetName());
                 for(const j1 of e1)
                 {
+                    // we can do another early nope-out
+                    // with dist check
+                    // do we do return or continue? continue for now
+                    //const dist = currentHitboxDist.distanceTo(j1.methodGetPosition());
+                    //if(dist > 2){continue;}
+
+                    const name = thisName + " -> " + j1.methodGetName();
+                    // this seems to only be true when we are close to the FIRST entity??? madness.
+                    if(entityDistancesBool[name] != true){continue;}
+
+                    //
                     const c1 = j1.methodGetComponent("EntityComponentHurtboxListList");
                     for(const j2 of c1.twoDimArraySpheres)
                     {
@@ -248,7 +321,10 @@ export class EntityComponentHitboxManager extends EntityComponent
 
     methodHandleUpdateDistances(paramMessage)
     {
-        this.methodUpdateSphere(this.#timeDeltaCounterMax);
+        // we either go with the actual deltatime, a fake number, or the max amount (it will run multiple times every frame)
+        // for now let's do a fake number
+        const deltaTime = 1;
+        this.methodUpdateSphere(deltaTime);
         return;
         this.methodUpdatePositionLines(paramMessage);
     }

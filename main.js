@@ -195,13 +195,14 @@ function init()
                     [1,],
                 ],
                 twoDimPositionOffset:[
-                    [{x:-10,y:0,z:-10},],
+                    [{x:0,y:0,z:0,},],
                 ],
                 twoDimArraySpheresRadius:[
                     [1.0,],
                 ],
         }));
         entityD.methodAddComponent(new EntityComponentGravity({scene: scene,isEnabled:true,}));
+        entityD.methodSetPosition({x:-10,y:0,z:-10,});
     }
 
     //
