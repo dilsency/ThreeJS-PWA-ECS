@@ -20,9 +20,7 @@ export class EntityComponentHitboxManager extends EntityComponent
     // testing
     #hasInitializedLines = false;
     #lines = [];
-    #linesPoints = [];
-    #linesPointsInitial = [];
-    #linesDistances = [];
+    #linesMaxDistance = 14;
     #hasRanOnce = false;
 
     //
@@ -111,8 +109,6 @@ export class EntityComponentHitboxManager extends EntityComponent
         const entityDistancesBool = [];
         var isAnyNear = false;
 
-        const maxDist = 5;
-
         //
         for(const j1_2 of e1)
         {
@@ -130,7 +126,7 @@ export class EntityComponentHitboxManager extends EntityComponent
             // our more complex index-key that goes by nameOfHurtbox...
             // ...may have to include a boolean as well
             entityDistances[name_2] = dist_2;
-            if(dist_2 > maxDist)
+            if(dist_2 > this.#linesMaxDistance)
             {
                 entityDistancesBool[name_2] = false;
                 //return;
@@ -172,20 +168,6 @@ export class EntityComponentHitboxManager extends EntityComponent
                     const name = thisName + " -> " + opponentName;
 
                     //
-                    //console.log(" ");
-                    //console.log(name);
-                    //console.log(indeces);
-
-                    // we can do another early nope-out
-                    // with dist check
-                    // do we do return or continue? continue for now
-                    //const dist = currentHitboxDist.distanceTo(j1.methodGetPosition());
-                    //if(dist > 2){continue;}
-
-                    // this seems to only be true when we are close to the FIRST entity??? madness.
-                    if(entityDistancesBool[name] != true){continue;}
-
-                    //
                     const c1 = j1.methodGetComponent("EntityComponentHurtboxListList");
                     for(const j2 of c1.twoDimArraySpheres)
                     {
@@ -222,20 +204,23 @@ export class EntityComponentHitboxManager extends EntityComponent
         //
         const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox);
         //
-        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, opponentNameIndex, dist);
-        //
-        const hasLine = this.methodHasLine(indeces, opponentNameIndex);
-        if(hasLine)
+        if(dist > this.#linesMaxDistance)
         {
-            this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].lineDistance = (dist);
-            if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
-            {
-                // we broadcast that we intersect, to the hurtbox
-                componentHurtbox.methodBroadcastMessage({
-                    invokableHandlerName: 'battleevent.takedamage',
-                    invokableHandlerValue: 0.1,
-                });
-            }
+            this.methodHideLine(indeces, opponentNameIndex, dist);
+            return;
+        }
+
+        //
+        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, opponentNameIndex, dist);
+
+        //
+        if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
+        {
+            // we broadcast that we intersect, to the hurtbox
+            componentHurtbox.methodBroadcastMessage({
+                invokableHandlerName: 'battleevent.takedamage',
+                invokableHandlerValue: 0.1,
+            });
         }
     }
     methodGetDistanceSphere(componentHitbox, componentHurtbox)
@@ -283,6 +268,8 @@ export class EntityComponentHitboxManager extends EntityComponent
         {
             this.methodCreateLine(indeces, opponentNameIndex, points);
         }
+        //
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].lineDistance = (dist);
 
         //
         //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].geometry.setFromPoints(points);
@@ -292,35 +279,35 @@ export class EntityComponentHitboxManager extends EntityComponent
         this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.geometry.setFromPoints(points);
         this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.geometry.computeBoundingSphere();
         
-        // based on distance we change the color
-        const col1 = new THREE.Color(0xFF0000);
-        const col2 = new THREE.Color(0x0000FF);
-        const col3 = new THREE.Color(0xFFFF00);
+            // based on distance we change the color
+            const col1 = new THREE.Color(0xFF0000);
+            const col2 = new THREE.Color(0x0000FF);
+            const col3 = new THREE.Color(0xFFFF00);
 
-        // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
-        
-        const maxdist1 = (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1);
-        const maxdist2 = (componentHitbox.sphereRadius * 4.1 + componentHurtbox.sphereRadius * 4.1);
+            // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
+            
+            const maxdist1 = (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1);
+            const maxdist2 = (componentHitbox.sphereRadius * 4.1 + componentHurtbox.sphereRadius * 4.1);
 
-        if(dist <= maxdist1)
-        {
-            col1.setColorName("cyan");
-        }
-        else if(dist <= maxdist2)
-        {
-            col3.lerp(col1, dist / maxdist2);
-            col1.copy(col3);
-        }
-        else {
-            col1.lerp(col2, ((dist - maxdist2) / maxdist2));
-        }
+            if(dist <= maxdist1)
+            {
+                col1.setColorName("cyan");
+            }
+            else if(dist <= maxdist2)
+            {
+                col3.lerp(col1, dist / maxdist2);
+                col1.copy(col3);
+            }
+            else {
+                col1.lerp(col2, ((dist - maxdist2) / maxdist2));
+            }
 
-        //
-        //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].material.color.set(col1.r, col1.g, col1.b);
+            //
+            //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].material.color.set(col1.r, col1.g, col1.b);
 
-        //
-        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.color.set(col1.r, col1.g, col1.b);
-        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.visible = true;
+            //
+            this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.color.set(col1.r, col1.g, col1.b);
+            this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.visible = true;
     }
     methodCreateLine(indeces, opponentNameIndex, points)
     {
@@ -364,8 +351,22 @@ export class EntityComponentHitboxManager extends EntityComponent
     }
 
     //
+    methodHideLine(indeces, opponentNameIndex, dist)
+    {
+        //
+        const hasLine = this.methodHasLine(indeces, opponentNameIndex);
+        if(!hasLine){return;}
+
+        //
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].methodHide();
+    }
     methodHideAllLines()
     {
+        // early return: no lines
+        if(this.#lines == null){return;}
+        if(this.#lines.length <= 0){return;}
+
+        //
         for(const i1 of this.#lines)
         {
             for(const i2 of i1)
@@ -497,9 +498,9 @@ export class EntityComponentHitboxManager extends EntityComponent
             //line.frustumCulled = false;
             this.#params.scene.add(line);
             this.#lines.push(line);
-            this.#linesPoints.push(points);
-            this.#linesPointsInitial.push(points);
-            this.#linesDistances.push(Math.abs(points[0].distanceTo(points[1])));
+            ////this.#linesPoints.push(points);
+            ////this.#linesPointsInitial.push(points);
+            ////this.#linesDistances.push(Math.abs(points[0].distanceTo(points[1])));
         }
     }
 
@@ -560,18 +561,18 @@ export class EntityComponentHitboxManager extends EntityComponent
                 const line = new THREE.Line( geometry, material );
                 //
                 this.#lines[index] = line;
-                this.#linesPoints[index] = points;
-                this.#linesPointsInitial[index] = points;
-                this.#linesDistances[index] = 0;//Math.abs(points[0].distanceTo(points[1]));
+                ////this.#linesPoints[index] = points;
+                ////this.#linesPointsInitial[index] = points;
+                ////this.#linesDistances[index] = 0;//Math.abs(points[0].distanceTo(points[1]));
                 //
                 this.#params.scene.add(line);
             }
 
-            this.#lines[index].geometry.setFromPoints(points);
-            this.#lines[index].geometry.computeBoundingSphere();
+            ////this.#lines[index].geometry.setFromPoints(points);
+            ////this.#lines[index].geometry.computeBoundingSphere();
             // we also update the distances
             const dist = Math.abs(points[0].distanceTo(points[1]));
-            this.#linesDistances[index] = (dist);
+            ////this.#linesDistances[index] = (dist);
             // based on distance we change the color
             //const distNormalize = Math.max(dist, 100.0) / 100.0;
             const distNormalize = dist / 5.0;
@@ -588,7 +589,7 @@ export class EntityComponentHitboxManager extends EntityComponent
             else {
                 col1.lerp(col2, distNormalize);
             }
-            this.#lines[index].material.color.set(col1.r, col1.g, col1.b);
+            ////this.#lines[index].material.color.set(col1.r, col1.g, col1.b);
             //
             index++;
         }
@@ -615,7 +616,8 @@ export class EntityComponentHitboxManager extends EntityComponent
                 */
 
                 // we have already pre-calculated distances, hehe
-                const isIntersecting = (this.#linesDistances[index] < (iteratorHitbox.sphereRadius + componentInstanceHurtbox.sphereRadius));
+                const isIntersecting = true;
+                ////const isIntersecting = (this.#linesDistances[index] < (iteratorHitbox.sphereRadius + componentInstanceHurtbox.sphereRadius));
 
                 // early continue: no intersection
                 if(!isIntersecting)

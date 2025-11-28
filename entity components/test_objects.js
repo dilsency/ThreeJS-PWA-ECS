@@ -265,6 +265,9 @@ export class EntityComponentGravity extends EntityComponent
     #velocity = null;
     #isEnabled = false;
 
+    //
+    #velocityMax = 0.08;
+
     // construct
     constructor(params)
     {
@@ -293,6 +296,8 @@ export class EntityComponentGravity extends EntityComponent
         this.#methodApplyVelocity();
     }
 
+    // helpers
+
     #methodIncreaseVelocity()
     {
         //
@@ -306,8 +311,12 @@ export class EntityComponentGravity extends EntityComponent
         }
         if(pos.y < 0)
         {
-            this.#velocity.y *= -0.9;
+            this.#velocity.y = Math.abs(this.#velocity.y);
+            this.#velocity.y *= 0.9;
         }
+
+        // clamp
+        this.#methodClampVelocity();
     }
     #methodApplyVelocity()
     {
@@ -320,10 +329,26 @@ export class EntityComponentGravity extends EntityComponent
         this.methodSetPosition(pos);
     }
 
+    #methodClampVelocity()
+    {
+        if(this.#velocity.y > this.#velocityMax)
+        {
+            this.#velocity.y = this.#velocityMax;
+        }
+        else if(this.#velocity.y < -(this.#velocityMax))
+        {
+            this.#velocity.y = -(this.#velocityMax);
+        }
+    }
+
     // handlers
 
     methodHandleTakeDamage(paramMessage)
     {
-        this.#velocity.y += 0.001;
+        //
+        this.#velocity.y += 0.05;
+
+        // clamp
+        this.#methodClampVelocity();
     }
 }
