@@ -118,7 +118,8 @@ export class EntityManager
 
     methodGenerateName()
     {
+        const name = ("entityName" + this.#idCounter);
         this.#idCounter++;
-        return ("entityName" + this.#idCounter);
+        return name;
     }
 }

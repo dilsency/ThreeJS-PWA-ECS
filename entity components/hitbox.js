@@ -26,8 +26,8 @@ export class EntityComponentHitboxManager extends EntityComponent
     #hasRanOnce = false;
 
     //
-    #timeDeltaCounter = 100 * 10;//1 / 2;//1 / 60;
-    #timeDeltaCounterMax = 100 * 10;//1 / 2;//1 / 60;
+    #timeDeltaCounter = 20;//1 / 2;//1 / 60;
+    #timeDeltaCounterMax = 20;//1 / 2;//1 / 60;
 
     // construct
     constructor(params)
@@ -146,6 +146,8 @@ export class EntityComponentHitboxManager extends EntityComponent
         {
             // at this point we should delete all lines associated with the current attacking hitbox (this.)
             // but since we stored them with indeces only we are f'd
+            this.methodHideAllLines();
+            this.#lines = [];
             return;
         }
 
@@ -166,6 +168,7 @@ export class EntityComponentHitboxManager extends EntityComponent
                 {
                     //
                     const opponentName = j1.methodGetName();
+                    const opponentNameIndex = Number(opponentName.split("entityName")[1]);
                     const name = thisName + " -> " + opponentName;
 
                     //
@@ -189,7 +192,7 @@ export class EntityComponentHitboxManager extends EntityComponent
                         for(const j3 of j2.arraySpheres)
                         {
                             // we now have both attacking hitbox and defending hurtbox
-                            this.methodUpdateSphere2(i2,j3,indeces,thisName,opponentName);
+                            this.methodUpdateSphere2(i2,j3,indeces,opponentNameIndex);
                             indeces[0]++;
                         }
                         indeces[1]++;
@@ -201,7 +204,7 @@ export class EntityComponentHitboxManager extends EntityComponent
             indeces[4]++;
         }
     }
-    methodUpdateSphere2(componentHitbox, componentHurtbox, indeces, thisName, opponentName)
+    methodUpdateSphere2(componentHitbox, componentHurtbox, indeces, opponentNameIndex)
     {
         //const attackerIndex = indeces[3] + indeces[4];
         //const defenderIndex = indeces[2] + indeces[1] + indeces[0];
@@ -219,12 +222,12 @@ export class EntityComponentHitboxManager extends EntityComponent
         //
         const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox);
         //
-        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, thisName, opponentName, dist);
+        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, opponentNameIndex, dist);
         //
-        const hasLine = this.methodHasLine(indeces, opponentName);
+        const hasLine = this.methodHasLine(indeces, opponentNameIndex);
         if(hasLine)
         {
-            this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].lineDistance = (dist);
+            this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].lineDistance = (dist);
             if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
             {
                 // we broadcast that we intersect, to the hurtbox
@@ -241,7 +244,7 @@ export class EntityComponentHitboxManager extends EntityComponent
         dist = componentHitbox.spherePositionAfterRotation.distanceTo(componentHurtbox.spherePositionAfterRotation);
         return dist;
     }
-    methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, thisName, opponentName, dist)
+    methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, opponentNameIndex, dist)
     {
         //
         //const index = indeces[0];
@@ -268,26 +271,26 @@ export class EntityComponentHitboxManager extends EntityComponent
         points[0].copy(componentHurtbox.spherePosition);
 
         // either
-        // [indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]]
+        // [indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]]
         // or
         // [nameExpanded]
 
         //
-        const hasLine = this.methodHasLine(indeces, opponentName);
+        const hasLine = this.methodHasLine(indeces, opponentNameIndex);
 
         // if we do not have a line here, init it
         if(!hasLine)
         {
-            this.methodCreateLine(indeces, thisName, opponentName, points);
+            this.methodCreateLine(indeces, opponentNameIndex, points);
         }
 
         //
-        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].geometry.setFromPoints(points);
-        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].geometry.computeBoundingSphere();
+        //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].geometry.setFromPoints(points);
+        //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].geometry.computeBoundingSphere();
 
         //
-        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.geometry.setFromPoints(points);
-        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.geometry.computeBoundingSphere();
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.geometry.setFromPoints(points);
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.geometry.computeBoundingSphere();
         
         // based on distance we change the color
         const col1 = new THREE.Color(0xFF0000);
@@ -313,50 +316,76 @@ export class EntityComponentHitboxManager extends EntityComponent
         }
 
         //
-        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].material.color.set(col1.r, col1.g, col1.b);
+        //this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].material.color.set(col1.r, col1.g, col1.b);
 
         //
-        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.material.color.set(col1.r, col1.g, col1.b);   
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.color.set(col1.r, col1.g, col1.b);
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]].line.material.visible = true;
     }
-    methodCreateLine(indeces, thisName, opponentName, points)
+    methodCreateLine(indeces, opponentNameIndex, points)
     {
         // we do unfortunately go through each layer subsequently
         if(this.#lines == null){this.#lines = [];}
         if(this.#lines[indeces[4]] == null){this.#lines[indeces[4]] = [];}
         if(this.#lines[indeces[4]][indeces[3]] == null){this.#lines[indeces[4]][indeces[3]] = [];}
-        if(this.#lines[indeces[4]][indeces[3]][opponentName] == null){this.#lines[indeces[4]][indeces[3]][opponentName] = [];}
-        if(this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] == null){this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] = [];}
-        if(this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] == null){this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = null;}
+        if(this.#lines[indeces[4]][indeces[3]][opponentNameIndex] == null){this.#lines[indeces[4]][indeces[3]][opponentNameIndex] = [];}
+        if(this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]] == null){this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]] = [];}
+        if(this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] == null){this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = null;}
         
         //
         
         //
-        const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, depthTest: false, } );
+        const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, depthTest: false, visible: true, } );
         const geometry = new THREE.BufferGeometry();
         const line = new THREE.Line( geometry, material );
 
         // either
-        // [indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]]
+        // [indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]]
         // or
         // [nameExpanded]
 
         //
-        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = new LineData({line: line, lineDistance: 0, linePoints: points,});
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = new LineData({scene: this.#params.scene, line: line, lineDistance: 0, linePoints: points,});
 
         //
         /*
-        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = line;
-        this.#linesPoints[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = points;
-        this.#linesPointsInitial[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = points;
-        this.#linesDistances[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = 0;//Math.abs(points[0].distanceTo(points[1]));
+        this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = line;
+        this.#linesPoints[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = points;
+        this.#linesPointsInitial[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = points;
+        this.#linesDistances[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] = 0;//Math.abs(points[0].distanceTo(points[1]));
         */
         
         //
         this.#params.scene.add(line);
     }
-    methodHasLine(indeces, opponentName)
+    methodHasLine(indeces, opponentNameIndex)
     {
-        return (this.#lines != null && this.#lines[indeces[4]] != null && this.#lines[indeces[4]][indeces[3]] != null && this.#lines[indeces[4]][indeces[3]][opponentName] != null && this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] != null && this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] != null);
+        return (this.#lines != null && this.#lines[indeces[4]] != null && this.#lines[indeces[4]][indeces[3]] != null && this.#lines[indeces[4]][indeces[3]][opponentNameIndex] != null && this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]] != null && this.#lines[indeces[4]][indeces[3]][opponentNameIndex][indeces[1]][indeces[0]] != null);
+    }
+
+    //
+    methodHideAllLines()
+    {
+        for(const i1 of this.#lines)
+        {
+            for(const i2 of i1)
+            {
+                for(const i3 of i2)
+                {
+                    if(!this.methodIsIterable(i3)){continue;}
+                    for(const i4 of i3)
+                    {
+                        if(!this.methodIsIterable(i4)){continue;}
+                        for(const i5 of i4)
+                        {
+                            if(i5 == null){continue;}
+                            //console.log(i5.constructor);
+                            i5.methodHide();
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // handlers
@@ -712,11 +741,15 @@ export class EntityComponentHitboxManager extends EntityComponent
 
 export class LineData
 {
+    //
+    #params = null;
+    //
     #line = null;
     #lineDistance = null;
     #linePoints = [];
     constructor(params)
     {
+        this.#params = params;
         this.#line = params.line;
         this.#lineDistance = params.lineDistance;
         this.#linePoints = params.linePoints;// copy?
@@ -731,6 +764,18 @@ export class LineData
     // setters
 
     set lineDistance(value){this.#lineDistance = value;}
+
+    // others
+
+    methodHide()
+    {
+        //
+        //this.#line.geometry.dispose();
+        //this.#params.scene.remove(this.#line);
+        
+        //
+        this.#line.material.visible = false;
+    }
 }
 
 
