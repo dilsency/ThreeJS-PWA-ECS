@@ -26,8 +26,8 @@ export class EntityComponentHitboxManager extends EntityComponent
     #hasRanOnce = false;
 
     //
-    #timeDeltaCounter = 100;//1 / 2;//1 / 60;
-    #timeDeltaCounterMax = 100;//1 / 2;//1 / 60;
+    #timeDeltaCounter = 100 * 10;//1 / 2;//1 / 60;
+    #timeDeltaCounterMax = 100 * 10;//1 / 2;//1 / 60;
 
     // construct
     constructor(params)
@@ -94,7 +94,7 @@ export class EntityComponentHitboxManager extends EntityComponent
         // keeps track of which line we are on
         // we could technically use normal for-loops and just use our iteratorIndex
         // BUT that is harder to read, actually
-        var index = 0;
+        var indeces = [0,0,0,0,0];
 
         // also we should use nameOfHurtbox as an index-key instead, but y'know
 
@@ -164,13 +164,21 @@ export class EntityComponentHitboxManager extends EntityComponent
                 // now we START looping over defending hurtboxes
                 for(const j1 of e1)
                 {
+                    //
+                    const opponentName = j1.methodGetName();
+                    const name = thisName + " -> " + opponentName;
+
+                    //
+                    //console.log(" ");
+                    //console.log(name);
+                    //console.log(indeces);
+
                     // we can do another early nope-out
                     // with dist check
                     // do we do return or continue? continue for now
                     //const dist = currentHitboxDist.distanceTo(j1.methodGetPosition());
                     //if(dist > 2){continue;}
 
-                    const name = thisName + " -> " + j1.methodGetName();
                     // this seems to only be true when we are close to the FIRST entity??? madness.
                     if(entityDistancesBool[name] != true){continue;}
 
@@ -181,109 +189,174 @@ export class EntityComponentHitboxManager extends EntityComponent
                         for(const j3 of j2.arraySpheres)
                         {
                             // we now have both attacking hitbox and defending hurtbox
-                            this.methodUpdateSphere2(i2,j3,index);
-                            index++;
+                            this.methodUpdateSphere2(i2,j3,indeces,thisName,opponentName);
+                            indeces[0]++;
                         }
-                        //index++;
+                        indeces[1]++;
                     }
-                    //index++;
+                    indeces[2]++;
                 }
-                //index++;
+                indeces[3]++;
             }
-            //index++;
+            indeces[4]++;
         }
-
-        //console.log(this.#lines.length);
     }
-    methodUpdateSphere2(componentHitbox, componentHurtbox, index)
+    methodUpdateSphere2(componentHitbox, componentHurtbox, indeces, thisName, opponentName)
     {
-        const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox, index);
-        this.#linesDistances[index] = (dist);
-        if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
+        //const attackerIndex = indeces[3] + indeces[4];
+        //const defenderIndex = indeces[2] + indeces[1] + indeces[0];
+        //
+        //const nameExpanded = (thisName + "["+indeces[4]+"]["+ indeces[3] +"] -> " + opponentName + "["+indeces[1]+"]["+ indeces[0] +"]");
+        //console.log(nameExpanded);
+        //
+        //const index = indeces[0];
+
+        // either
+        // [indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]]
+        // or
+        // [nameExpanded]
+
+        //
+        const dist = this.methodGetDistanceSphere(componentHitbox, componentHurtbox);
+        //
+        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, thisName, opponentName, dist);
+        //
+        const hasLine = this.methodHasLine(indeces, opponentName);
+        if(hasLine)
         {
-            // we broadcast that we intersect, to the hurtbox
-            componentHurtbox.methodBroadcastMessage({
-                invokableHandlerName: 'battleevent.takedamage',
-                invokableHandlerValue: 0.1,
-            });
+            this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].lineDistance = (dist);
+            if(dist < (componentHitbox.sphereRadius + componentHurtbox.sphereRadius))
+            {
+                // we broadcast that we intersect, to the hurtbox
+                componentHurtbox.methodBroadcastMessage({
+                    invokableHandlerName: 'battleevent.takedamage',
+                    invokableHandlerValue: 0.1,
+                });
+            }
         }
-        const res = this.methodUpdateOrCreateLine(componentHitbox, componentHurtbox, index, dist);
     }
-    methodGetDistanceSphere(componentHitbox, componentHurtbox, index)
+    methodGetDistanceSphere(componentHitbox, componentHurtbox)
     {
         var dist = 0;
         dist = componentHitbox.spherePositionAfterRotation.distanceTo(componentHurtbox.spherePositionAfterRotation);
         return dist;
     }
-    methodUpdateOrCreateLine(componentHitbox, componentHurtbox, index, dist)
+    methodUpdateOrCreateLine(componentHitbox, componentHurtbox, indeces, thisName, opponentName, dist)
     {
-            // to do
-            // index should definitely not be a simple integer
-            // we should first have a level where the key is the unique name of the enemy entity
-            // (since we ourselves are the attacker, we don't need to store our own name)
-            // and then inside that can we have the other array, or multiple
+        //
+        //const index = indeces[0];
+
+        // to do
+        // index should definitely not be a simple integer
+        // we should first have a level where the key is the unique name of the enemy entity
+        // (since we ourselves are the attacker, we don't need to store our own name)
+        // and then inside that can we have the other array, or multiple
 
 
-            
-            //
-            const points = [
-                new THREE.Vector3(0,0,0),
-                new THREE.Vector3(0,0,0),
-            ];
-            // this part is easy
-            // : our own hitbox
-            points[1].copy(componentHitbox.spherePositionAfterRotation);
-            // this is the part that doesn't want to work
-            // : the enemy hurtbox
-            //points[0].copy(componentHurtbox.spherePositionAfterRotation);
-            points[0].copy(componentHurtbox.spherePosition);
+        
+        //
+        const points = [
+            new THREE.Vector3(0,0,0),
+            new THREE.Vector3(0,0,0),
+        ];
+        // this part is easy
+        // : our own hitbox
+        points[1].copy(componentHitbox.spherePositionAfterRotation);
+        // this is the part that doesn't want to work
+        // : the enemy hurtbox
+        //points[0].copy(componentHurtbox.spherePositionAfterRotation);
+        points[0].copy(componentHurtbox.spherePosition);
 
-            // if we do not have a line here, init it
-            if(this.#lines[index] == null || this.#lines[index] == undefined)
-            {
-                this.methodCreateLine(index, points);
-            }
+        // either
+        // [indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]]
+        // or
+        // [nameExpanded]
 
-            this.#lines[index].geometry.setFromPoints(points);
-            this.#lines[index].geometry.computeBoundingSphere();
-            
-            // based on distance we change the color
-            const col1 = new THREE.Color(0xFF0000);
-            const col2 = new THREE.Color(0x0000FF);
-            const col3 = new THREE.Color(0xFFFF00);
+        //
+        const hasLine = this.methodHasLine(indeces, opponentName);
 
-            // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
-            
-            const maxdist1 = (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1);
-            const maxdist2 = (componentHitbox.sphereRadius * 4.1 + componentHurtbox.sphereRadius * 4.1);
+        // if we do not have a line here, init it
+        if(!hasLine)
+        {
+            this.methodCreateLine(indeces, thisName, opponentName, points);
+        }
 
-            if(dist <= maxdist1)
-            {
-                col1.setColorName("cyan");
-            }
-            else if(dist <= maxdist2)
-            {
-                col3.lerp(col1, dist / maxdist2);
-                col1.copy(col3);
-            }
-            else {
-                col1.lerp(col2, ((dist - maxdist2) / maxdist2));
-            }
-            this.#lines[index].material.color.set(col1.r, col1.g, col1.b);
-            //
+        //
+        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].geometry.setFromPoints(points);
+        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].geometry.computeBoundingSphere();
+
+        //
+        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.geometry.setFromPoints(points);
+        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.geometry.computeBoundingSphere();
+        
+        // based on distance we change the color
+        const col1 = new THREE.Color(0xFF0000);
+        const col2 = new THREE.Color(0x0000FF);
+        const col3 = new THREE.Color(0xFFFF00);
+
+        // is dist not in absolutes or smn? it doesn't seem to register when rotating and then on the other side?
+        
+        const maxdist1 = (componentHitbox.sphereRadius * 1.1 + componentHurtbox.sphereRadius * 1.1);
+        const maxdist2 = (componentHitbox.sphereRadius * 4.1 + componentHurtbox.sphereRadius * 4.1);
+
+        if(dist <= maxdist1)
+        {
+            col1.setColorName("cyan");
+        }
+        else if(dist <= maxdist2)
+        {
+            col3.lerp(col1, dist / maxdist2);
+            col1.copy(col3);
+        }
+        else {
+            col1.lerp(col2, ((dist - maxdist2) / maxdist2));
+        }
+
+        //
+        //this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].material.color.set(col1.r, col1.g, col1.b);
+
+        //
+        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]].line.material.color.set(col1.r, col1.g, col1.b);   
     }
-    methodCreateLine(index, points)
+    methodCreateLine(indeces, thisName, opponentName, points)
     {
+        // we do unfortunately go through each layer subsequently
+        if(this.#lines == null){this.#lines = [];}
+        if(this.#lines[indeces[4]] == null){this.#lines[indeces[4]] = [];}
+        if(this.#lines[indeces[4]][indeces[3]] == null){this.#lines[indeces[4]][indeces[3]] = [];}
+        if(this.#lines[indeces[4]][indeces[3]][opponentName] == null){this.#lines[indeces[4]][indeces[3]][opponentName] = [];}
+        if(this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] == null){this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] = [];}
+        if(this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] == null){this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = null;}
+        
+        //
+        
+        //
         const material = new THREE.LineBasicMaterial( { color: 0x0000ff, side: THREE.DoubleSide, depthTest: false, } );
         const geometry = new THREE.BufferGeometry();
         const line = new THREE.Line( geometry, material );
+
+        // either
+        // [indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]]
+        // or
+        // [nameExpanded]
+
         //
-        this.#lines[index] = line;
-        this.#linesPoints[index] = points;
-        this.#linesPointsInitial[index] = points;
-        this.#linesDistances[index] = 0;//Math.abs(points[0].distanceTo(points[1]));
+        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = new LineData({line: line, lineDistance: 0, linePoints: points,});
+
+        //
+        /*
+        this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = line;
+        this.#linesPoints[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = points;
+        this.#linesPointsInitial[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = points;
+        this.#linesDistances[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] = 0;//Math.abs(points[0].distanceTo(points[1]));
+        */
+        
         //
         this.#params.scene.add(line);
+    }
+    methodHasLine(indeces, opponentName)
+    {
+        return (this.#lines != null && this.#lines[indeces[4]] != null && this.#lines[indeces[4]][indeces[3]] != null && this.#lines[indeces[4]][indeces[3]][opponentName] != null && this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]] != null && this.#lines[indeces[4]][indeces[3]][opponentName][indeces[1]][indeces[0]] != null);
     }
 
     // handlers
@@ -634,6 +707,30 @@ export class EntityComponentHitboxManager extends EntityComponent
         }
         return typeof obj[Symbol.iterator] === 'function';
     }
+}
+
+
+export class LineData
+{
+    #line = null;
+    #lineDistance = null;
+    #linePoints = [];
+    constructor(params)
+    {
+        this.#line = params.line;
+        this.#lineDistance = params.lineDistance;
+        this.#linePoints = params.linePoints;// copy?
+    }
+
+    // getters
+
+    get line() {return this.#line;}
+    get lineDistance() {return this.#lineDistance;}
+    get linePoints() {return this.#linePoints;}
+
+    // setters
+
+    set lineDistance(value){this.#lineDistance = value;}
 }
 
 
