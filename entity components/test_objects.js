@@ -12,12 +12,19 @@ export class EntityComponentTestCube extends EntityComponent
 
     //
     #cube = null;
+    #positionOffset = {x:0,y:0,z:0};
 
     // construct
     constructor(params)
     {
         super(params);
         this.#params = params;
+
+        //
+        if(params.positionOffset != null)
+        {
+            this.#positionOffset = params.positionOffset;
+        }
     }
 
      // lifecycle
@@ -29,6 +36,11 @@ export class EntityComponentTestCube extends EntityComponent
         this.#cube = new THREE.Mesh( geometry, material );
         this.#params.scene.add(this.#cube);
 
+        //
+        this.#cube.position.x += this.#positionOffset.x;
+        this.#cube.position.y += this.#positionOffset.y;
+        this.#cube.position.z += this.#positionOffset.z;
+
         // register handlers
 
         this.methodRegisterInvokableHandler('update.position', (paramMessage) =>{ this.methodHandleUpdatePosition(paramMessage);});
@@ -36,7 +48,7 @@ export class EntityComponentTestCube extends EntityComponent
 
     methodUpdate(timeElapsed, timeDelta)
     {
-        this.#cube.rotation.y += timeDelta;
+        //this.#cube.rotation.y += timeDelta;
     }
 
     // handlers

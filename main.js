@@ -19,6 +19,7 @@ import { EntityComponentHurtbox } from "./entity components/hitbox.js";
 
 // bare minimum
 var scene;
+var sceneHUD;
 var renderer;
 
 var clock;
@@ -27,6 +28,7 @@ var clockTimeElapsed = 0;
 
 var cameraPivot;
 var camera;
+var cameraHUD;
 
 var cameraDirection;
 var cameraPivotDirection;
@@ -57,11 +59,19 @@ function init()
         scene.environment = null;
 
         //
+        sceneHUD = new THREE.Scene();
+        sceneHUD.environment = null;
+
+        //
         cameraPivot = new THREE.Object3D();
         cameraPivot.name = "cameraPivot";
         //cameraPivot.position.z = 5;
         scene.add(cameraPivot);
         camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+        //
+        cameraHUD = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+        sceneHUD.add(cameraHUD);
 
         //
         camera.up.set(0,1,0);
@@ -76,6 +86,10 @@ function init()
         camera.getWorldDirection(cameraDirection);
         cameraPivot.getWorldDirection(cameraPivotDirection);
         cameraFrustum.setFromProjectionMatrix(camera.projectionMatrix);
+
+        //
+        cameraHUD.up.set(0,1,0);
+        cameraHUD.updateProjectionMatrix();
 
         //
         renderer = new THREE.WebGLRenderer();
@@ -203,6 +217,15 @@ function init()
         }));
         entityD.methodAddComponent(new EntityComponentGravity({scene: scene,isEnabled:true,}));
         entityD.methodSetPosition({x:-10,y:0,z:-10,});
+
+        // sceneHUD
+
+        const entityHUD = new Entity(null);
+        entityManager.methodAddEntity(entityHUD);
+        entityHUD.methodAddComponent(new EntityComponentTestCube({scene:sceneHUD,name:"model",
+            //positionOffset:{x:-3.0,y:-1.5,z:-3.0},
+            positionOffset:{x:-0,y:-0,z:-10.0},
+        }));
     }
 
     //
@@ -235,6 +258,8 @@ function update()
 
     // must be last
     renderer.render(scene, camera);
+    renderer.autoClear = false;
+    renderer.render(sceneHUD, cameraHUD);
 }
 
 function resizeRendererToMatchDisplaySize(renderer)
@@ -256,6 +281,9 @@ function updateWindowSize()
         const canvas = renderer.domElement;
         camera.aspect = canvas.clientWidth / canvas.clientHeight;
         camera.updateProjectionMatrix();
+        // cameraHUD
+        cameraHUD.aspect = canvas.clientWidth / canvas.clientHeight;
+        cameraHUD.updateProjectionMatrix();
     }
 }
 
